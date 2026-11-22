@@ -1,0 +1,12 @@
+# Native audio initialization boundary
+
+audio-pcode.graph.jsonl contains5 bounded resident functions; audio-pcode-report.json is their index. Query tools/query_audio.py ROOT ADDRESS. audio-init-pseudocode.json retains normalized CFG, unresolved expressions and excluded foreign-tail operations.
+
+Native803176dc initializes thread queue807181a0, submits DSP task806b16a0 via8031e6c8, then waits in a no-call loop803177a4 until global807181b0 becomes nonzero. 8031e6c8 registers the task with interrupts disabled/restored and invokes8031ee5c when it is the active task. The trace proves original mailbox writes upload8192bytes at805e4c20 with entry PC0010 through free IROM. No CPU callback patch is used to set807181b0.
+
+Runtime limitation found: prior native core interrupt safe points at OS enable/restore and idle cannot service that no-call loop. Function-entry polling fixes WUD initialization but does not fix the AX loop. Recompiler now emits cooperative IRQ polls at backward-branch target labels as well. Native cycle-exact timing, representative gameplay and FP/paired-single equivalence remain unverified.
+
+AI clock separate synthetic tests cover32/48KHz counters, stop/reset/fractional ticks, wrap and interrupt ACK. Rust DSP adapter executes free IROM and original uploaded microcode in shared native memory. DSP native trace/boot callbacks pending verification after the loop-poll build. PCM output and AID rate synchronization remain unfinished; no audible playback claim.
+
+
+Current continuation supersedes the bootstrap-only limitations above: original AX callback and original RSO/common loading execute. Native AICR bit6 feeds Rust AID32/48k scheduling; late polls preserve recurring DMA deadlines. MW_AUDIO_WAV captures original DSP/AX mixed PCM with bounded output/metadata. Stage201 diagnostic produced1421312 stereo frames at32k,2319313 nonzero channel samples, absolute peak15242. Native PlayBGM_EX(this806a1d6c,r4=5), PlayVoiceStream(r4=1022) and SE routes execute original bodies; sound identity/filename mappings and bit/timing comparison remain open. The normal E00 boot capture was silent; do not generalize that to broken DSP mixing. Original Dolphin E00 title DMA buffers at SDK writer80314c00 are nonzero; GDB MMIO reads are unsupported, so comparisons use SDK arguments and mapped RAM. Typed candidate store graph:audio-dma-register-stores.graph.jsonl/AID-DMA-INDEX.md. Audio device/Bevy playback remains unfinished.

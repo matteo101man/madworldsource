@@ -1,0 +1,7 @@
+{
+    "file_format_version": "1.0.0",
+    "runtime": {
+        "name": "MadWorld XR Simulator",
+        "library_path": "D:/GDecomp/build-cache/xrsim/release/mw_xrsim.dll"
+    }
+}

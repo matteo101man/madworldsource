@@ -1,0 +1,414 @@
+{
+  "version": 1,
+  "claims": [
+    {
+      "id": "C-001",
+      "text": "Native PC replays observe Rin HP reduction, including1600 to1489, using explicit shared PC packets through the original game systems.",
+      "status": "fact",
+      "evidence": [
+        {
+          "kind": "runtime",
+          "ref": "evidence/native-held-struggle-summary.json"
+        }
+      ],
+      "note": "",
+      "created": "2026-11-08T06:24:08Z"
+    },
+    {
+      "id": "C-002",
+      "text": "Both original actor-role motion contents match complete owned MOT resources during88 concurrent native paired observations (04AA/AB/AD with0110/0111/0113).",
+      "status": "fact",
+      "evidence": [
+        {
+          "kind": "runtime",
+          "ref": "evidence/native-rin-pair-content-summary.json"
+        }
+      ],
+      "note": "",
+      "created": "2026-11-08T06:24:08Z"
+    },
+    {
+      "id": "C-003",
+      "text": "The Bevy AudioPlugin/default-device sink consumes captured original AID PCM through NativePcm. This does not establish human audibility or original mixing/timing equivalence.",
+      "status": "fact",
+      "evidence": [
+        {
+          "kind": "runtime",
+          "ref": "evidence/bevy-native-audio-device.json"
+        }
+      ],
+      "note": "",
+      "created": "2026-11-08T06:24:08Z"
+    },
+    {
+      "id": "C-004",
+      "text": "The Explorer Color version checkbox remains default-off and its added palette applies across models/event roles; colors are an inspection treatment.",
+      "status": "fact",
+      "evidence": [
+        {
+          "kind": "runtime",
+          "ref": "D:/Games/gamesfordecomp/exports/madworld/evidence/color-toggle-http-regression.json"
+        }
+      ],
+      "note": "",
+      "created": "2026-11-08T06:24:08Z"
+    },
+    {
+      "id": "C-005",
+      "text": "The common core.idd atlas contains the original handheld controller pictures and button glyphs; no native PC graphic replacement has been implemented.",
+      "status": "inferred",
+      "evidence": [
+        {
+          "kind": "bytes",
+          "ref": "research/ui-common-and-core-source-index.json"
+        }
+      ],
+      "note": "",
+      "created": "2026-11-08T06:24:08Z",
+      "contradictions": [
+        {
+          "reason": "Superseded by implementation: native DI tracing showed this boot reads standalone etc/core_us.idd; PC prompt conversion now targets that file. Archived core2_us.dat candidate was not active.",
+          "when": "2026-11-08T07:07:23Z"
+        }
+      ]
+    },
+    {
+      "id": "C-006",
+      "text": "Full fight/competition/win-loss, native timing/shading/pixel equivalence and Bevy window behavior remain unverified.",
+      "status": "unknown",
+      "evidence": [],
+      "note": "Do not close these from compilation, headless presentations, source hashes or the audio-device sink check.",
+      "created": "2026-11-08T06:24:08Z"
+    },
+    {
+      "id": "C-007",
+      "text": "A separate same-length standalone core_us.idd changes 11 controller prompt slots while preserving palettes and every untargeted sprite. All three modified full CI4 texture pages match staged SHA256 values in the native guest RAM.",
+      "status": "fact",
+      "evidence": [
+        {
+          "kind": "bytes",
+          "ref": "staged/pc-ui/manifest.json"
+        },
+        {
+          "kind": "runtime",
+          "ref": "evidence/native-pc-ui-live-memory.json"
+        }
+      ],
+      "note": "Texture loading and sparse asset conversion only; live animation, legibility, contextual prompting and complete Wii UI removal remain open.",
+      "created": "2026-11-08T07:07:23Z"
+    },
+    {
+      "id": "C-008",
+      "text": "The native USB speaker path decodes and mixes an unmuted synthetic ADPCM report fixture into the installed PC stereo sink. Native speaker initialization is observed as ADPCM at divisor2000 (6kHz), volume88, then muted; natural sound-event output remains unverified.",
+      "status": "fact",
+      "evidence": [
+        {
+          "kind": "runtime",
+          "ref": "evidence/native-speaker-mixer-tests.log"
+        },
+        {
+          "kind": "runtime",
+          "ref": "evidence/native-remote-audio-summary.json"
+        }
+      ],
+      "note": "Synthetic path proof and real initialization/packet observations only; no original-game audible speaker sound, bit/mix/event timing equivalence or complete audio coverage claim.",
+      "created": "2026-11-08T07:28:46Z"
+    },
+    {
+      "id": "C-009",
+      "text": "In an explicit original-API contact fixture, shared held-X input raises the native meter, passes the directional follow-up, selects full source AA/AB/AC and0110/0111/0112 role contents, reduces Rin HP1600 to1300 and returns the player to ordinary play with HP80 unchanged.",
+      "status": "fact",
+      "evidence": [
+        {
+          "kind": "runtime",
+          "ref": "evidence/bevy-native-clash-fixture-clash-summary.json"
+        },
+        {
+          "kind": "runtime",
+          "ref": "evidence/bevy-native-clash-fixture-paired-summary.json"
+        }
+      ],
+      "note": "Synthetic original slalom/contact API setup, no direct host writes to actor health/positions/meter/flags. Natural contact/AI initiation, full-fight win and visual/timing parity remain open.",
+      "created": "2026-11-08T08:02:05Z"
+    },
+    {
+      "id": "C-010",
+      "text": "With the contact fixture disabled and no fixture execution, ordinary PC chainsaw press/release and strike inputs naturally initiate Rin competition. Held X passes the native meter and directional follow-up, selects original success roles, reduces Rin HP1600 to1300, and returns to ordinary play with player HP70 unchanged.",
+      "status": "fact",
+      "evidence": [
+        {
+          "kind": "runtime",
+          "ref": "evidence/bevy-native-pulsed-clash-clash-summary.json"
+        },
+        {
+          "kind": "runtime",
+          "ref": "evidence/bevy-native-pulsed-clash-paired-summary.json"
+        }
+      ],
+      "note": "One observed normal-contact clash with complete source role hashes; no full-fight win, all-mechanics, native animation-speed or visual/timing equivalence claim.",
+      "created": "2026-11-08T08:13:37Z"
+    }
+  ],
+  "obligations": [
+    {
+      "id": "mesh.structural",
+      "description": "Bounds finite, triangle/vertex counts match source, UVs and material slots resolved",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "mesh.rendered",
+      "description": "Rendered view matches the original (shape, scale, orientation, textures)",
+      "authority": "rendered",
+      "required": true
+    },
+    {
+      "id": "texture.structural",
+      "description": "Decoded size/format matches header; mips and alpha handled",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "texture.rendered",
+      "description": "Appears correct on a model, not just in an image viewer",
+      "authority": "rendered",
+      "required": true
+    },
+    {
+      "id": "skeleton.structural",
+      "description": "Bind pose sampled; weights unit-sum; bone hierarchy finite",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "skeleton.rendered",
+      "description": "Posed character is not stretched or inverted",
+      "authority": "rendered",
+      "required": true
+    },
+    {
+      "id": "animation.structural",
+      "description": "Tracks bound by shared bone hashes/names; sampled poses bounded",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "animation.behavioral",
+      "description": "Clip selected by gameplay state plays correctly in play",
+      "authority": "behavioral",
+      "required": true
+    },
+    {
+      "id": "world.structural",
+      "description": "Placement count and transforms match source records",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "world.rendered",
+      "description": "Camera view agrees with the original's layout",
+      "authority": "rendered",
+      "required": true
+    },
+    {
+      "id": "world.behavioral",
+      "description": "Collision/grounding works when walked on",
+      "authority": "behavioral",
+      "required": true
+    },
+    {
+      "id": "audio.structural",
+      "description": "Decoded length/sample rate match source",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "audio.behavioral",
+      "description": "The right sound plays for the right event, including delays and switches",
+      "authority": "behavioral",
+      "required": true
+    },
+    {
+      "id": "hud.structural",
+      "description": "Layout, frame labels, nested transforms parsed",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "hud.behavioral",
+      "description": "States change with gameplay (ammo, health, weapon)",
+      "authority": "behavioral",
+      "required": true
+    },
+    {
+      "id": "shader.structural",
+      "description": "Texture slots and constants identified from the original program",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "shader.rendered",
+      "description": "Material look matches the original under comparable lighting",
+      "authority": "rendered",
+      "required": true
+    },
+    {
+      "id": "gameplay.behavioral",
+      "description": "Mechanic matches the original's data-defined numbers and feel",
+      "authority": "behavioral",
+      "required": true
+    },
+    {
+      "id": "performance.rendered",
+      "description": "Measured with real rendering enabled, warm and repeated",
+      "authority": "rendered",
+      "required": true
+    },
+    {
+      "id": "native.input-mapper",
+      "description": "PC keys/buttons form the intended explicit native controller packet",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "native.hid-transport",
+      "description": "Native HID transport and held/directional motion contracts pass",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "native.source-role-content",
+      "description": "Recorded Rin/player role MOT identities agree with complete owned source members",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "native.audio-device-sink",
+      "description": "Headless Bevy audio sink consumes captured original PCM",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "native.embedded-lifecycle",
+      "description": "The owned embedded core stops safely and isolates startup failures",
+      "authority": "structural",
+      "required": true
+    },
+    {
+      "id": "native.pc-damage-observed",
+      "description": "Boss HP reduction is observed through shared PC inputs in native gameplay",
+      "authority": "behavioral",
+      "required": true
+    },
+    {
+      "id": "native.struggle-completion",
+      "description": "PC held-struggle input completes the native competition and required follow-up",
+      "authority": "behavioral",
+      "required": true
+    },
+    {
+      "id": "native.pc-ui-replacement",
+      "description": "Native controller graphics/prompts are replaced with correct PC UI in gameplay",
+      "authority": "behavioral",
+      "required": true
+    },
+    {
+      "id": "native.natural-clash-contact",
+      "description": "Normal PC attacks initiate Rin competition through unmodified AI and native contact resolution",
+      "authority": "behavioral",
+      "required": true
+    }
+  ],
+  "results": [
+    {
+      "obligation": "native.input-mapper",
+      "verifier": "pc-mapper-contracts",
+      "authority": "structural",
+      "passed": true,
+      "artifact": "evidence/native-pc-struggle-tests.log",
+      "note": "Eight tests pass; gameplay/window fidelity not implied.",
+      "when": "2026-11-08T06:24:08Z"
+    },
+    {
+      "obligation": "native.hid-transport",
+      "verifier": "native-hardware-contracts",
+      "authority": "structural",
+      "passed": true,
+      "artifact": "evidence/native-shake-tests.log",
+      "note": "Fifteen tests pass, including held shake loop/cancel and ordinary directional one-shot semantics.",
+      "when": "2026-11-08T06:24:08Z"
+    },
+    {
+      "obligation": "native.source-role-content",
+      "verifier": "native-source-role-observations",
+      "authority": "structural",
+      "passed": true,
+      "artifact": "evidence/native-rin-pair-content-summary.json",
+      "note": "Complete live content matched at observation time; not frame-atomic or visual parity.",
+      "when": "2026-11-08T06:24:08Z"
+    },
+    {
+      "obligation": "native.audio-device-sink",
+      "verifier": "native-audio-device",
+      "authority": "structural",
+      "passed": true,
+      "artifact": "evidence/bevy-native-audio-device.json",
+      "note": "Quiet original PCM played through a headless Bevy device sink; integrated battle timing/mix not verified.",
+      "when": "2026-11-08T06:24:08Z"
+    },
+    {
+      "obligation": "native.embedded-lifecycle",
+      "verifier": "embedded-host-cases",
+      "authority": "structural",
+      "passed": true,
+      "artifact": "evidence/native-hold-shake-embedded-tests.log",
+      "note": "Three isolated cases pass.",
+      "when": "2026-11-08T06:24:08Z"
+    },
+    {
+      "obligation": "native.pc-damage-observed",
+      "verifier": "native-health-delta-analysis",
+      "authority": "behavioral",
+      "passed": true,
+      "artifact": "evidence/native-held-struggle-summary.json",
+      "note": "Narrow headless HP-delta observation; not a complete mechanics/fight equivalence result.",
+      "when": "2026-11-08T06:24:08Z"
+    },
+    {
+      "obligation": "native.source-role-content",
+      "verifier": "native-pair-source-audit",
+      "authority": "structural",
+      "passed": true,
+      "artifact": "evidence/native-rin-pair-content-summary.json",
+      "note": "NATIVE_ROLE_CONTENT_AUDIT PASSED observations=88 originalMembers=6; recorded concurrent snapshots only, not a new live/rendered validation",
+      "when": "2026-11-08T06:45:46Z"
+    },
+    {
+      "obligation": "native.struggle-completion",
+      "verifier": "native-clash-fixture-trace",
+      "authority": "behavioral",
+      "passed": true,
+      "artifact": "evidence/bevy-native-clash-fixture-clash-summary.json",
+      "note": "-native-clash-fixture\", \"fixtureAccepted\": true, \"episodes\": 1, \"successfulEpisodes\": 1}\nNATIVE_ROLE_CONTENT_AUDIT PASSED observations=144 originalMembers=6; recorded concurrent snapshots only, not a new live/rendered validation\nNATIVE_CLASH_FIXTURE_TRACE_AUDIT PASSED; original-API setup, shared held PC input, native success/follow-up/return. Not natural contact, full fight or visual/timing proof.",
+      "when": "2026-11-08T08:02:05Z"
+    },
+    {
+      "obligation": "native.struggle-completion",
+      "verifier": "native-natural-clash-trace",
+      "authority": "behavioral",
+      "passed": true,
+      "artifact": "evidence/bevy-native-pulsed-clash-clash-summary.json",
+      "note": "{\"label\": \"bevy-native-pulsed-clash\", \"fixtureAccepted\": false, \"episodes\": 1, \"successfulEpisodes\": 1}\nNATIVE_ROLE_CONTENT_AUDIT PASSED observations=144 originalMembers=6; recorded concurrent snapshots only, not a new live/rendered validation\nNATIVE_NATURAL_CLASH_TRACE_AUDIT PASSED; ordinary PC input, native contact, native success/follow-up/return; no full-fight or visual/timing proof.",
+      "when": "2026-11-08T08:13:37Z"
+    },
+    {
+      "obligation": "native.natural-clash-contact",
+      "verifier": "native-natural-clash-trace",
+      "authority": "behavioral",
+      "passed": true,
+      "artifact": "evidence/bevy-native-pulsed-clash-clash-summary.json",
+      "note": "{\"label\": \"bevy-native-pulsed-clash\", \"fixtureAccepted\": false, \"episodes\": 1, \"successfulEpisodes\": 1}\nNATIVE_ROLE_CONTENT_AUDIT PASSED observations=144 originalMembers=6; recorded concurrent snapshots only, not a new live/rendered validation\nNATIVE_NATURAL_CLASH_TRACE_AUDIT PASSED; ordinary PC input, native contact, native success/follow-up/return; no full-fight or visual/timing proof.",
+      "when": "2026-11-08T08:13:37Z"
+    }
+  ]
+}

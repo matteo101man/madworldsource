@@ -1,0 +1,27 @@
+[workspace]
+members = ["crates/mw-data", "crates/mw-sim", "crates/mw-game"]
+resolver = "2"
+exclude = ["native-platform", "tools/gecko-reference", "crates/vendor/openxr", "crates/vendor/openxr-sys", "crates/vendor/libloading", "crates/vendor/cmake", "crates/vendor/mint"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bevy = { version = "=0.20.0", features = ["wav"] }
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+# Line tables only: symbolized profiles of the shipped build; no codegen change.
+[profile.release]
+debug = "line-tables-only"
+
+# Crates the VR port fetched, kept on D: (crates/vendor) instead of the C: cargo cache
+[patch.crates-io]
+openxr = { path = "crates/vendor/openxr" }
+openxr-sys = { path = "crates/vendor/openxr-sys" }
+libloading = { path = "crates/vendor/libloading" }
+cmake = { path = "crates/vendor/cmake" }
+mint = { path = "crates/vendor/mint" }

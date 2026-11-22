@@ -1,0 +1,133 @@
+{
+  "game": "MadWorld RinRin native port RZZE8P",
+  "validators": {
+    "pc-mapper-contracts": {
+      "cmd": [
+        "cargo",
+        "test",
+        "--locked",
+        "--manifest-path",
+        "Cargo.toml",
+        "-p",
+        "mw-game",
+        "--features",
+        "native-runtime",
+        "--bin",
+        "madworld-native",
+        "--jobs",
+        "3"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "D:/GDecomp/build-cache/bevy-0.20"
+      },
+      "pass_regex": "test result: ok",
+      "authority": "structural",
+      "obligations": [
+        "native.input-mapper"
+      ]
+    },
+    "native-hardware-contracts": {
+      "cmd": [
+        "cargo",
+        "test",
+        "--locked",
+        "--manifest-path",
+        "native-platform/Cargo.toml",
+        "--lib",
+        "--jobs",
+        "3"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "D:/GDecomp/build-cache/madworld-platform"
+      },
+      "pass_regex": "test result: ok",
+      "authority": "structural",
+      "obligations": [
+        "native.hid-transport"
+      ]
+    },
+    "native-pair-source-audit": {
+      "cmd": [
+        "C:\\Users\\Matteo\\AppData\\Local\\Programs\\Python\\Python310\\Scripts\\python.exe",
+        "tools/audit_native_pair_contents.py"
+      ],
+      "pass_regex": "NATIVE_ROLE_CONTENT_AUDIT PASSED",
+      "authority": "structural",
+      "obligations": [
+        "native.source-role-content"
+      ],
+      "artifact": "evidence/native-rin-pair-content-summary.json"
+    },
+    "native-audio-device": {
+      "cmd": [
+        "cargo",
+        "test",
+        "--locked",
+        "--manifest-path",
+        "Cargo.toml",
+        "-p",
+        "mw-game",
+        "--features",
+        "native-runtime",
+        "--bin",
+        "madworld-native",
+        "--jobs",
+        "3",
+        "--",
+        "native_audio::tests::owned_pcm_plays_through_headless_bevy_audio_device",
+        "--exact",
+        "--ignored",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "D:/GDecomp/build-cache/bevy-0.20"
+      },
+      "pass_regex": "HEADLESS_AUDIO_DEVICE",
+      "authority": "structural",
+      "obligations": [
+        "native.audio-device-sink"
+      ],
+      "artifact": "evidence/bevy-native-audio-device.json"
+    },
+    "embedded-host-cases": {
+      "cmd": [
+        "C:\\Users\\Matteo\\AppData\\Local\\Programs\\Python\\Python310\\Scripts\\python.exe",
+        "tools/test_embedded_core.py"
+      ],
+      "authority": "structural",
+      "obligations": [
+        "native.embedded-lifecycle"
+      ],
+      "artifact": "evidence/native-embedded-results.json"
+    },
+    "native-clash-fixture-trace": {
+      "cmd": [
+        "C:\\Users\\Matteo\\AppData\\Local\\Programs\\Python\\Python310\\Scripts\\python.exe",
+        "tools/audit_native_clash.py"
+      ],
+      "pass_regex": "NATIVE_CLASH_FIXTURE_TRACE_AUDIT PASSED",
+      "authority": "behavioral",
+      "obligations": [
+        "native.struggle-completion"
+      ],
+      "artifact": "evidence/bevy-native-clash-fixture-clash-summary.json"
+    },
+    "native-natural-clash-trace": {
+      "cmd": [
+        "C:\\Users\\Matteo\\AppData\\Local\\Programs\\Python\\Python310\\Scripts\\python.exe",
+        "tools/audit_native_clash.py",
+        "--label",
+        "bevy-native-pulsed-clash",
+        "--require-natural"
+      ],
+      "pass_regex": "NATIVE_NATURAL_CLASH_TRACE_AUDIT PASSED",
+      "authority": "behavioral",
+      "obligations": [
+        "native.struggle-completion",
+        "native.natural-clash-contact"
+      ],
+      "artifact": "evidence/bevy-native-pulsed-clash-clash-summary.json"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+[package]
+name = "mw_xrsim"
+version = "0.1.0"
+edition = "2021"
+description = "A headless OpenXR runtime for testing MadWorld's VR path without a headset (XR_RUNTIME_JSON=tools/vr/xrsim/xrsim.json)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+openxr-sys = "0.13.1"
+ash = "0.38"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# its own workspace (not a member of the game's)
+[workspace]
+
+[patch.crates-io]
+openxr-sys = { path = "../../../crates/vendor/openxr-sys" }
+mint = { path = "../../../crates/vendor/mint" }
+cmake = { path = "../../../crates/vendor/cmake" }

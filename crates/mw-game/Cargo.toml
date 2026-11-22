@@ -1,0 +1,43 @@
+[package]
+name = "mw-game"
+version = "0.1.0"
+edition = "2021"
+default-run = "mw-game"
+
+[dependencies]
+bevy.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+toml = "1"
+mw-data = { path = "../mw-data" }
+mw-sim = { path = "../mw-sim" }
+# OpenXR (Quest 3 over Link / Air Link / Virtual Desktop). Vendored from bevy_oxr 0.6 and ported to Bevy 0.20 (crates/vendor).
+bevy_mod_openxr = { path = "../vendor/bevy_mod_openxr" }
+bevy_mod_xr = { path = "../vendor/bevy_mod_xr" }
+openxr = "0.21.1"
+
+[features]
+native-runtime = ["dep:mw-native-platform", "dep:libloading"]
+
+[dependencies.mw-native-platform]
+path = "../../native-platform"
+optional = true
+features = ["native-render"]
+
+[dependencies.libloading]
+version = "0.8.9"
+optional = true
+
+# Same wgpu as bevy/backend-wgpu; the native color grade pass (native_grade.rs) builds its own pipeline.
+[dependencies.wgpu]
+version = "=30.0.1"
+default-features = false
+features = ["dx12", "vulkan", "wgsl"]
+
+[[bin]]
+name = "madworld-native"
+path = "src/native_main.rs"
+required-features = ["native-runtime"]
+
+[dev-dependencies]
+wgpu = { version = "=30.0.1", default-features = false, features = ["dx12", "wgsl"] }

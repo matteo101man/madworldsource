@@ -1,0 +1,3 @@
+# Native c201 player points
+
+PlayerTbl.plp is232bytes,16-byte header followed by6 records of36bytes. Native802164cc uses position at record+20,+24,+28 and yaw at+32. Record prefix20bytes carries source labels. Native80216534 applies the point through player virtual methods and records the index; world loader80214878 passes the low byte of its third argument. Point5 is explicitly named boss at(2.5,17.55,-61), yaw180source units. This verifies the engine start-point parameter, not Rin spawn/progression or boss encounter state. MW_BOOT_POINT=5 is an explicit diagnostic argument override; no score/unlock flag changes are made.

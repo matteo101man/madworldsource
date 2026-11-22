@@ -1,0 +1,38 @@
+# derived or copyrighted data never goes in git
+extracted/
+staged/
+assets/
+*.dmp
+target*/
+.venv/
+__pycache__/
+
+# Local owned-game research/runtime output
+cache/
+evidence/
+native-core-user/
+native-host-data/
+tools/upstream-native-core/
+tools/gecko-reference/
+tools/ghidra-projects/
+tools/havok-venv/
+*.dol
+*.rso
+*.dat
+*.rvz
+*.wav
+*.glb
+*.bin
+
+# research: keep the written docs, drop the large generated graphs/compare dumps
+research/*
+!research/*.md
+
+# third-party binaries / embedded repos
+tools/vgmstream/
+tools/vgmstream-*.zip
+tools/soulstruct-havok/
+*.exe
+*.dll
+*.pdb
+pc-controls.toml

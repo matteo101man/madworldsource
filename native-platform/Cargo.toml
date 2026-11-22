@@ -1,0 +1,22 @@
+[package]
+name = "mw-native-platform"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+native-render = ["dep:backend-wgpu"]
+# Measurement only: gecko's Cranelift vertex loader (DSP and CPU stay interpreted).
+vertex-jit = ["gecko/jit"]
+
+[dependencies]
+gecko = { path = "../tools/gecko-reference/crates/gecko", default-features = false }
+backend-wgpu = { path = "../tools/gecko-reference/crates/backend-wgpu", optional = true }
+
+[profile.dev]
+opt-level = 2
