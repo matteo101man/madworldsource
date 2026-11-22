@@ -6,8 +6,9 @@ It started from the RinRin boss fight and grew into a multi-stage game with opti
 
 > **No original game data is in this repository.** Everything under `assets/native/`, `extracted/`, `staged/` and the
 > research dumps comes from your own disc through the staging tools in `tools/`. The only committed assets are the
-> owner's own: **Kreese Kreely** (`assets/characters/kreely`, `assets/native/kreely-*`, `assets/native/audio/kreely`)
-> and the port's actor definitions (`assets/defs`).
+> owner's own: **Kreese Kreely** (`assets/characters/kreely`, `assets/native/kreely-*`, `assets/native/audio/kreely`),
+> **the three vampire zako** (`assets/characters/vampzako`, `assets/native/vampzako*`) and the port's actor
+> definitions (`assets/defs`).
 
 **Start here:**
 - **[SETUP.md](SETUP.md)**: from your disc to a playable `mw-play`. Covers disc extraction, the explorer export, every staging step, then build and run.
@@ -57,6 +58,7 @@ VR design notes are in [notes/VR.md](notes/VR.md).
 | `recomp/` | Our changes to the upstream recompiled core (`overlay/`, `upstream-modified.patch`) and its build guide |
 | `explorer/` | The MadWorld explorer builder (disc decoder, GLB exporter, viewer) that the staging tools read from |
 | `assets/characters/kreely`, `assets/native/kreely-*` | Kreese Kreely: source model, build, rig, moves, voice bank |
+| `assets/characters/vampzako`, `assets/native/vampzako*` | The vampire zako: source meshes, concept sheets, builds, rigs |
 | `tools/` | Extraction, staging, indexing, comparison, VR test runtime (`tools/vr/xrsim`), Ghidra scripts |
 | `research/*.md` | Reverse-engineering write-ups per subsystem (boss behavior, audio, collision, events, UI, controls) |
 | `notes/` | VR notes, ledger report, mod log |

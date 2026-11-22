@@ -109,12 +109,20 @@ node explorer/review_export.mjs D:/Games/gamesfordecomp/exports/madworld <stem>
   `it0501`, `it0502`, `bl0330 hat`, `bl0522 heli` and `wp0582 mbat` through `stage_actor.py`. Also `python -I tools/stage_wound_decals.py`.
 - **town**: `python -I tools/town/stage_civilians.py`, `tools/town/stage_civ_motion.py` and `tools/town/stage_nav.py` (needs the collision step first).
 - **Lit looks (F3)**: `python -I tools/stage_sign_lights.py`.
-- **Vampire zako**: `python -I tools/vampzako/build_vampzako.py 1 2 3`. This needs the three user-provided Tripo meshes
-  (a hardcoded Desktop path) and Blender. Without them, set `MW_VAMPZAKO=0` and the regular kung fu grunts drop instead.
+- **Vampire zako**: already in the repo (see 3c).
 
-### 3c. Already in the repo: Kreely
+### 3c. Already in the repo: Kreely and the vampire zako
 
-Kreese Kreely, the custom player character, is committed and needs no staging:
+**The vampire zako** (Elise's brood, the owner's own models) are committed and need no staging:
+- `assets/characters/vampzako/source/`: the three original meshes (`vampirezakoN/vampirezakoN.fbx` and `.fbm` textures)
+  and the concept sheets (`vampire_purple_*.png`).
+- `assets/characters/vampzako/build/`: build reports and source and colour textures.
+- `assets/native/vampzako{1,2,3}-{source,color}.glb` and `vampzakoN-rig.json`. The actor definition is `assets/defs/actors/vampzako.json`.
+
+To rebuild them: `python -I tools/vampzako/build_vampzako.py 1 2 3`. This needs Blender 4.4 and the staged grunt
+(`em0101`, step 3a), because they ride his skeleton and clips. `tools/vampzako/view_weights.py` and `view_face.py` render checks.
+
+**Kreese Kreely**, the custom player character, is committed and needs no staging:
 - `assets/characters/kreely/`: source FBX and textures, the build model and textures, skinning work files.
 - `assets/native/kreely-{source,color}.glb`, `kreely-rig.json`, `kreely-moves.json`, `kreely-gun-motion.json`, `kreely-golden-poses.json`.
 - `assets/native/audio/kreely/`: 40 voice lines (`kreely.json`), with review takes.
@@ -153,6 +161,7 @@ Bindings and display settings are in `pc-controls.toml` next to the exe. Control
 
 - This order was rebuilt from the tool sources after the fact. It has not been tested from a clean machine, so a step
   may be missing or need a different order. Fix this file when you find one.
-- Some stages need data that is not on the disc: the vampire zako meshes, the God Hand clips, and Kreely's voice tooling.
+- Two things are not on the disc and not in the repo: the God Hand source for Kreely's clips and Kreely's voice
+  tooling. Their outputs are committed, so play does not need them.
 - `research/` holds only the written `.md` notes. The generated graph, JSONL and compare files are rebuilt by the `tools/index_*.py`
   scripts. They are needed for analysis, not for play.

@@ -1,0 +1,93 @@
+{
+ "source": {
+  "fbx": "C:\\Users\\Matteo\\Desktop\\newmadworldchars\\vampirezako1\\vampirezako1.fbx",
+  "fbxSha256": "eb2f9b3d247f1d17d3f9a705142abb5350cd7caf81c627e95ba02f3fbecb09c1",
+  "texture": "C:\\Users\\Matteo\\Desktop\\newmadworldchars\\vampirezako1\\vampirezako1.fbm\\vampirezako1_basecolor.jpg",
+  "textureSha256": "fb1228a6c8da843021f9af8d3ed3fdf3d17d14dd4a43d4021eeecd494a371a8e"
+ },
+ "flippedToFaceZ": false,
+ "height": 1.8,
+ "rootScale": 0.9202823004732037,
+ "gruntLandmarks": {
+  "top": 2.13100004196167,
+  "tip": 1.2079999446868896,
+  "armY": 1.7339999675750732,
+  "armZ": -0.03799999877810478,
+  "armUnderside": 1.5859999656677246,
+  "armpitX": 0.2669999897480011,
+  "wristX": 0.9545000195503235,
+  "crotchY": 1.013426711684779
+ },
+ "landmarks": {
+  "top": 1.8,
+  "tip": 0.9152011922503726,
+  "armY": 1.455737704918033,
+  "armZ": -0.020351818052915818,
+  "armUnderside": 1.4253353204172876,
+  "armpitX": 0.19448584202682564,
+  "wristX": 0.7262011922503726,
+  "crotchY": 0.9553846153846155
+ },
+ "springs": {
+  "breast250": {
+   "apex": [
+    0.097,
+    1.378,
+    0.167
+   ],
+   "verts": 74
+  },
+  "breast251": {
+   "apex": [
+    -0.097,
+    1.378,
+    0.167
+   ],
+   "verts": 74
+  },
+  "butt200": {
+   "apex": [
+    0.074,
+    1.039,
+    -0.177
+   ],
+   "verts": 46
+  },
+  "butt201": {
+   "apex": [
+    -0.074,
+    1.039,
+    -0.177
+   ],
+   "verts": 46
+  },
+  "hair": {
+   "verts": 575,
+   "bottom": 1.489,
+   "back": -0.183
+  },
+  "fingers": {
+   "L": "detected",
+   "R": "detected"
+  },
+  "weights": {
+   "head": 1378,
+   "neck": 164,
+   "shoulderTransfer": 1194,
+   "bridgesRemoved": 12
+  }
+ },
+ "heatLog": [
+  "blender_weights.py heat-in.npz: weighted 5434 of 5434"
+ ],
+ "heatFallbackVertices": 0,
+ "triangles": {
+  "head": 2870,
+  "legs": 2238,
+  "body": 5476
+ },
+ "outputs": {
+  "source": "a54187894eafdc10dd1c0e3d80c82ef5bd5a3ade763956402a349caa2d2d1fa0",
+  "color": "b9472ea668a1e2f51c284aa9dad9009b78baba15f3a9872009dd87e29551486d"
+ }
+}

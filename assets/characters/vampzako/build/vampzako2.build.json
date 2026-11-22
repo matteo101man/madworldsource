@@ -1,0 +1,95 @@
+{
+ "source": {
+  "fbx": "C:\\Users\\Matteo\\Desktop\\newmadworldchars\\vampirezako2\\vampirezako2.fbx",
+  "fbxSha256": "4770669f7f64f168a8d13e47301760c1b67e508017c2bd33be1b3def14b2e690",
+  "texture": "C:\\Users\\Matteo\\Desktop\\newmadworldchars\\vampirezako2\\vampirezako2.fbm\\vampirezako2_basecolor.jpg",
+  "textureSha256": "428c2383bafda08db90db74f9da1a337ebe36623b8a4021b044ae39d9d990095"
+ },
+ "flippedToFaceZ": false,
+ "height": 1.76,
+ "rootScale": 0.8913167181215583,
+ "gruntLandmarks": {
+  "top": 2.13100004196167,
+  "tip": 1.2079999446868896,
+  "armY": 1.7339999675750732,
+  "armZ": -0.03799999877810478,
+  "armUnderside": 1.5859999656677246,
+  "armpitX": 0.2669999897480011,
+  "wristX": 0.9545000195503235,
+  "crotchY": 1.013426711684779
+ },
+ "landmarks": {
+  "top": 1.76,
+  "tip": 0.8895604938271605,
+  "armY": 1.4188641975308642,
+  "armZ": -0.07728404708173539,
+  "armUnderside": 1.3937461728395062,
+  "armpitX": 0.1516641975308642,
+  "wristX": 0.7047604938271606,
+  "crotchY": 0.916494983277592
+ },
+ "springs": {
+  "breast250": {
+   "apex": [
+    0.065,
+    1.325,
+    0.109
+   ],
+   "verts": 181
+  },
+  "breast251": {
+   "apex": [
+    -0.06,
+    1.325,
+    0.109
+   ],
+   "verts": 180
+  },
+  "butt200": {
+   "apex": [
+    0.05,
+    1.011,
+    -0.213
+   ],
+   "verts": 41
+  },
+  "butt201": {
+   "apex": [
+    -0.046,
+    1.012,
+    -0.213
+   ],
+   "verts": 40
+  },
+  "hair": {
+   "verts": 915,
+   "bottom": 1.453,
+   "back": -0.225
+  },
+  "fingers": {
+   "L": "detected",
+   "R": "detected"
+  },
+  "weights": {
+   "head": 2044,
+   "neck": 137,
+   "shoulderTransfer": 1448,
+   "bridgesRemoved": 77
+  }
+ },
+ "heatLog": [
+  "blender_weights.py heat-in.npz: weighted 0 of 5301",
+  "blender_heat_merged.py heat-in.npz: weighted 0 of 5301 (cleaned 5140 )",
+  "blender_heat_merged.py heat-in-turned.npz: weighted 5191 of 5301 (cleaned 5141 )"
+ ],
+ "heatFallbackVertices": 110,
+ "triangles": {
+  "head": 3934,
+  "legs": 1329,
+  "body": 4835
+ },
+ "outputs": {
+  "source": "0ec2fdef2c26f756230e34217f5e53ee66ecc84774b2f58155fd87e68eec9f10",
+  "color": "30d68fcf2333603a065162cc3273c98512a545b4b63dd506b4e266bdcd09bbde"
+ }
+}

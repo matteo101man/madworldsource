@@ -2,7 +2,7 @@
 
 python -I tools/vampzako/build_vampzako.py [1 2 3] [--blender PATH]
 
-Inputs (local): C:/Users/Matteo/Desktop/newmadworldchars/vampirezakoN/vampirezakoN.fbx + .fbm/vampirezakoN_basecolor.jpg
+Inputs (in repo): assets/characters/vampzako/source/vampirezakoN/vampirezakoN.fbx + .fbm/vampirezakoN_basecolor.jpg
                 (user-provided Tripo meshes, unrigged, T-pose) and the owned em/em0101.dat#em0101.mdb (the explorer's
                 MDB reader) for the grunt's joints and proportions.
 Outputs: assets/native/vampzakoN-source.glb, assets/native/vampzakoN-color.glb, assets/native/vampzakoN-rig.json,
@@ -33,7 +33,7 @@ import kreely_fingers as kfing     # finger chains on T-pose hands
 import export_kreely_glb as eg     # the GLB writer (same conventions as the staged actors)
 
 EXPLORER = PORT.parents[1] / 'exports' / 'madworld'
-SRC = Path(r'C:\Users\Matteo\Desktop\newmadworldchars')
+SRC = PORT / 'assets/characters/vampzako/source'   # the owner's meshes, copied in from Desktop/newmadworldchars
 OUT = PORT / 'assets/characters/vampzako/build'
 NATIVE = PORT / 'assets/native'
 GRUNT_ID = 'em/em0101.dat#em0101.mdb@12992'

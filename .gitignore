@@ -60,3 +60,7 @@ assets/voices/*
 !assets/characters/kreely/**
 assets/characters/kreely/*.log
 assets/characters/kreely/*.err
+# the vampire zako (the owner's own meshes and builds)
+!assets/characters/vampzako/
+!assets/characters/vampzako/**
+!assets/native/vampzako*

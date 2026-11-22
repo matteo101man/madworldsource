@@ -1,0 +1,93 @@
+{
+ "source": {
+  "fbx": "C:\\Users\\Matteo\\Desktop\\newmadworldchars\\vampirezako3\\vampirezako3.fbx",
+  "fbxSha256": "e0f08dd8374f993e235f74617c9b0316252ce69d65e9c29cf2cc5c9274f4b657",
+  "texture": "C:\\Users\\Matteo\\Desktop\\newmadworldchars\\vampirezako3\\vampirezako3.fbm\\vampirezako3_basecolor.jpg",
+  "textureSha256": "9838a70685555f6bb45c5ca662803bee0b85cbf54dcbd97f7eb60872487501f1"
+ },
+ "flippedToFaceZ": false,
+ "height": 1.78,
+ "rootScale": 0.8983718199369324,
+ "gruntLandmarks": {
+  "top": 2.13100004196167,
+  "tip": 1.2079999446868896,
+  "armY": 1.7339999675750732,
+  "armZ": -0.03799999877810478,
+  "armUnderside": 1.5859999656677246,
+  "armpitX": 0.2669999897480011,
+  "wristX": 0.9545000195503235,
+  "crotchY": 1.013426711684779
+ },
+ "landmarks": {
+  "top": 1.78,
+  "tip": 0.9177984886649874,
+  "armY": 1.444624685138539,
+  "armZ": -0.08801016851486428,
+  "armUnderside": 1.4107732997481108,
+  "armpitX": 0.15916876574307304,
+  "wristX": 0.7308984886649874,
+  "crotchY": 0.9197658862876255
+ },
+ "springs": {
+  "breast250": {
+   "apex": [
+    0.075,
+    1.342,
+    0.142
+   ],
+   "verts": 124
+  },
+  "breast251": {
+   "apex": [
+    -0.075,
+    1.342,
+    0.142
+   ],
+   "verts": 123
+  },
+  "butt200": {
+   "apex": [
+    0.065,
+    1.002,
+    -0.166
+   ],
+   "verts": 60
+  },
+  "butt201": {
+   "apex": [
+    -0.065,
+    1.002,
+    -0.166
+   ],
+   "verts": 60
+  },
+  "hair": {
+   "verts": 661,
+   "bottom": 1.47,
+   "back": -0.246
+  },
+  "fingers": {
+   "L": "detected",
+   "R": "detected"
+  },
+  "weights": {
+   "head": 1859,
+   "neck": 106,
+   "shoulderTransfer": 1342,
+   "bridgesRemoved": 100
+  }
+ },
+ "heatLog": [
+  "blender_weights.py heat-in.npz: weighted 5291 of 5350"
+ ],
+ "heatFallbackVertices": 59,
+ "triangles": {
+  "head": 3809,
+  "legs": 1952,
+  "body": 4801
+ },
+ "outputs": {
+  "source": "e6d916ab98a07bd062aae15d8649fb8082701ebae86ec9a6a890a93e59d92ae1",
+  "color": "91ee3798506e46af6517c79b8579c9205dc68bde7cd86d174e77d63563df81c3"
+ }
+}

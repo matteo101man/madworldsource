@@ -54,7 +54,7 @@ def main():
     T = Ts[head[Ts].all(1)]
     tex = np.asarray(Image.open(PORT / f'assets/characters/vampzako/build/vampzako{a.n}_{a.texture}.png').convert('RGB'), np.float32)
     views = [raster(P, uv, T, tex, 520, yaw) for yaw in (0., 0.6)]
-    c = Image.open(f'C:/Users/Matteo/Desktop/newmadworldchars/vampire_purple_000{CONCEPT[a.n]:02d}_.png').convert('RGB')
+    c = Image.open(PORT / f'assets/characters/vampzako/source/vampire_purple_000{CONCEPT[a.n]:02d}_.png').convert('RGB')
     cw = c.size[0]; face = c.crop((cw // 2 - 70, 0, cw // 2 + 70, 140)).resize((520, 520), Image.LANCZOS)
     out = Image.new('RGB', (1560, 520)); [out.paste(im, (520 * i, 0)) for i, im in enumerate(views + [face])]
     path = a.out or str(PORT / f'assets/characters/vampzako/build/face{a.n}.png'); out.save(path); print(path)
