@@ -1,0 +1,130 @@
+# Guest functions replaced by host code in port/runtime (high-level emulation).
+# The recompiler emits the original as f_XXXXXXXX_recomp; the runtime defines f_XXXXXXXX.
+# Format: address  name  # where it's implemented
+
+0x802FB16C  OSReport        # os/os_report.cpp
+0x802FB1F8  OSPanic         # os/os_report.cpp
+0x802F7CA4  DBPrintf        # os/os_report.cpp
+0x802FD338  OSFatal         # os/os_report.cpp
+0x802FA050  __OSInitAudioSystem  # os/os_audio.cpp (DSP not emulated; audio is HLE'd later)
+0x802FA218  __OSStopAudioSystem  # os/os_audio.cpp
+0x80301900  SelectThread         # os/threads.cpp (guest threads run on host fibers)
+0x802FABA0  OSSaveContext        # os/threads.cpp
+0x802FAC20  OSLoadContext        # os/threads.cpp
+0x802FE818  OSDisableInterrupts  # os/interrupts.cpp
+0x802FE82C  OSEnableInterrupts   # os/interrupts.cpp (delivers pending interrupts)
+0x802FE840  OSRestoreInterrupts  # os/interrupts.cpp (delivers pending interrupts)
+0x802F7ACC  PPCMtdec             # os/interrupts.cpp (decrementer -> host timer)
+
+# Transparent, optional diagnostics: each wrapper calls the original body.
+0x802140E4  TraceWorldLoad      # game/trace_boot.cpp
+0x801FC51C  TraceEffectInit     # game/trace_boot.cpp
+0x801FC87C  TraceEffectCleanup  # game/trace_boot.cpp
+0x80215160  TraceSceneUpdate    # game/trace_boot.cpp
+0x800DA39C  TraceCommonInit     # game/trace_boot.cpp
+0x800DA420  TraceCommonLoad     # game/trace_boot.cpp
+0x8024C8E4  TraceCorePack       # game/trace_boot.cpp
+
+0x802E4AE8  TraceNativeThrow    # game/trace_boot.cpp: original unwind diagnostic
+0x8021F368  NativeTaskEntryBridge # game/native_unwind.cpp: original task catch continuation
+
+# Original sound route diagnostics; every wrapper calls the native body.
+0x8026A108 TracePlayBGM # game/trace_sound.cpp
+0x8026B558 TracePlayVoice # game/trace_sound.cpp
+0x802683D0 TracePlaySE # game/trace_sound.cpp
+0x80268628 TracePlaySEOneShot # game/trace_sound.cpp
+
+0x8026FE74 TracePropFactory # game/trace_objects.cpp: original factory, diagnostic only
+
+0x8026FED4 TraceActorFactory # game/trace_objects.cpp: verified tail target of CreateObj
+0x80216534 TracePlayerPoint # game/trace_objects.cpp: original point setter
+
+0x80145934 TraceStage201Logic # game/trace_boot.cpp: original stage201 RPN setup
+0x801E3AAC TraceBossThreshold # game/trace_boot.cpp: original getter enum24
+
+0x80147BBC TraceNativeBossEntry # game/trace_boot.cpp: original demo/event21/EMS10 sequence
+0x80123820 TraceNativeEventRequest # game/trace_boot.cpp
+0x8005B6A4 TraceRpnSend # game/trace_boot.cpp: original named-message send, MW_TRACE_RPN only
+0x8005B724 TraceRpnInvoke # game/trace_boot.cpp: original listener invoke inside send
+0x8005B674 TraceRpnBroadcast # game/trace_boot.cpp: original broadcast send, MW_TRACE_RPN only
+0x80113900 TraceRpnListenerSet # game/trace_boot.cpp: original cListenerBase::set, MW_TRACE_RPN only
+0x80086C9C TraceBeginDemoMode # game/trace_boot.cpp: original BeginDemoMode, MW_TRACE_RPN log only
+0x80086D58 TraceEndDemoMode # game/trace_boot.cpp: original EndDemoMode, MW_TRACE_RPN log only
+0x80280F84 TracePlayerDemoGuardBegin # game/trace_boot.cpp: original player demo guard begin, MW_TRACE_RPN log only
+0x802788B0 TracePlayerDemoGuardEnd # game/trace_boot.cpp: original player demo guard end, MW_TRACE_RPN log only
+0x80244DBC TraceContinueWindow # game/trace_boot.cpp: original continue/game-over window open, MW_TRACE_RPN log only
+0x80245370 TraceGameOverBanner # game/trace_boot.cpp: original game-over banner, MW_TRACE_RPN log only
+0x800A6F60 TraceNativeEventClock # game/trace_boot.cpp
+
+0x801EAAE8 TraceEnemySetLoad # game/trace_objects.cpp: original EMS loader
+0x801EA61C TraceEnemySetIdentity # game/trace_objects.cpp: original ID selector
+
+0x801EB484 TraceBossSetUpdate # game/trace_objects.cpp
+0x801EB298 TraceBossSetEligibility # game/trace_objects.cpp
+0x8026F538 RemovedStrapScreen # game/pc_removed.cpp: boot wrist-strap screen not shown in the PC port
+
+# PC free camera (default off, MW_PC_FREE_CAMERA=1; research/PC-CAMERA.md). Both call the original body.
+0x802C9F3C PlayerFollowCamera # game/pc_camera.cpp: orbit offset inside the original follow camera
+0x800BA4B0 MtxInitRotVec # game/pc_camera.cpp: only the follow camera's call (LR 802CA61C) is changed
+
+# PC death cinematic (default on, MW_PC_DEATH_CINEMATIC=0 / MW_PC_DEATH_NO_STATIC=0 restore the original; research/PC-DEATH-CINEMATIC.md). All call the original, except StaticWipe for one caller under its own toggle.
+0x802C0F80 PlayerDeadUpdate # game/pc_death_cinematic.cpp: state 95 update, observed only
+0x8025AA04 MotionStep # game/pc_death_cinematic.cpp: Jack's death motion step scaled (LR 800793F4 only)
+0x801248A4 PlayerDeadQuery # game/pc_death_cinematic.cpp: held at 0 for LR 80128714 during the shot
+0x801241A0 StaticWipe # game/pc_death_cinematic.cpp: MW_PC_DEATH_NO_STATIC skips it for LR 80127E54 only
+
+# PC input: WPAD/KPAD API answered by host code, no Bluetooth stack (research/INPUT-HLE.md).
+# Every wrapper runs the original body under MW_INPUT_HLE=legacy|compare.
+0x8036E260 KPADInit # game/input_hle.cpp: sole entry to KPADiInit -> WPADInit -> WUDInit
+0x8032B1D8 WPADRegisterAllocator # game/input_hle.cpp
+0x8032B1DC WPADGetStatus # game/input_hle.cpp
+0x8036B07C KPADSetParamA # game/input_hle.cpp
+0x8036B098 KPADSetParamB # game/input_hle.cpp
+0x8036B0B4 KPADSetParamC # game/input_hle.cpp
+0x8036B0D0 KPADSetParamD # game/input_hle.cpp
+0x8036E820 KPADSetConnectCallback # game/input_hle.cpp
+0x8036E888 KPADDisableDPD # game/input_hle.cpp
+0x8036E8A4 KPADEnableDPD # game/input_hle.cpp
+0x8036D950 KPADReadEx # game/input_hle.cpp
+0x8032C564 WPADProbe # game/input_hle.cpp
+0x8032C7A0 WPADSetDataFormat # game/input_hle.cpp
+0x8032C418 WPADDisconnect # game/input_hle.cpp
+0x8032B1E0 WPADGetRadioSensitivity # game/input_hle.cpp
+0x8032C8AC WPADGetInfoAsync # game/input_hle.cpp
+0x8032CACC WPADControlMotor # game/input_hle.cpp
+0x8032C4D8 WPADEnableMotor # game/input_hle.cpp
+0x8032C50C WPADResetAutoSleep # game/input_hle.cpp
+0x8032D2EC WPADIsSpeakerEnabled # game/input_hle.cpp
+0x8032D330 WPADControlSpeaker # game/input_hle.cpp
+0x8032EB08 WPADCanSendStreamData # game/input_hle.cpp
+0x8032EB8C WPADSendStreamData # game/input_hle.cpp
+0x8032B1CC HbmWpadSyncA # game/input_hle.cpp: Home Button Menu only
+0x8032B1D0 HbmWpadSyncB # game/input_hle.cpp
+0x8032B1D4 HbmWpadSyncC # game/input_hle.cpp
+0x8032CB98 HbmWpadSetA # game/input_hle.cpp
+0x8032CBCC HbmWpadSetB # game/input_hle.cpp
+0x8032CDE8 HbmWpadSaveConfig # game/input_hle.cpp
+0x8032E94C HbmWpadDpdA # game/input_hle.cpp
+0x8032E980 HbmWpadDpdB # game/input_hle.cpp
+0x80330918 HbmWpadQuery # game/input_hle.cpp
+0x8032C678 HbmWpadQueryB # game/input_hle.cpp
+0x8032C700 HbmWpadQueryC # game/input_hle.cpp
+
+# GX SDK hooks (research/GX-HLE.md, names in research/gx-sdk-functions.json). Each calls the
+# original body unless MW_GX_HLE=compare, which also checks an independent encoding.
+0x80374FA8  GXSetTevColorIn   # gx/gx_hle.cpp
+0x80374FE8  GXSetTevAlphaIn   # gx/gx_hle.cpp
+0x80375028  GXSetTevColorOp   # gx/gx_hle.cpp
+0x80375080  GXSetTevAlphaOp   # gx/gx_hle.cpp
+0x803758E4  GXSetBlendMode    # gx/gx_hle.cpp
+0x8037598C  GXSetZMode        # gx/gx_hle.cpp
+
+# Frame-rate wait: same polling/exit as the original, but sleeps until the next
+# hardware deadline instead of spinning. Opt-in (MW_FRAME_WAIT_HLE=1) for now.
+0x8026F324  FrameWaitRetrace  # game/frame_wait.cpp
+
+# Original effect requests (MW_TRACE_EFFECTS); every wrapper calls the native body.
+0x801FD578 TraceSetEffect # game/trace_effects.cpp
+0x801FE990 TraceCreateEff # game/trace_effects.cpp
+0x801FE7AC TraceCreatePartsEff # game/trace_effects.cpp
+0x801E1680 TraceBloodColor # game/trace_effects.cpp

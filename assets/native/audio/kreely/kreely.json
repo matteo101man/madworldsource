@@ -1,0 +1,172 @@
+{
+  "defeat": [
+    {
+      "file": "native/audio/kreely/defeat_01.wav",
+      "text": "And THAT'S how we did it on Death Watch. Somebody get me a drink."
+    },
+    {
+      "file": "native/audio/kreely/defeat_02.wav",
+      "text": "Stay down, sweetheart. Uncle Kreese has a bar tab waiting."
+    },
+    {
+      "file": "native/audio/kreely/defeat_03.wav",
+      "text": "Ah, I needed that. Better than a hot shower and a cold beer."
+    },
+    {
+      "file": "native/audio/kreely/defeat_04.wav",
+      "text": "I've had hangovers that put up a better fight than you."
+    },
+    {
+      "file": "native/audio/kreely/defeat_05.wav",
+      "text": "Somebody sweep that up. I'm not touching it."
+    },
+    {
+      "file": "native/audio/kreely/defeat_06.wav",
+      "text": "Woo! Still got it. Never lost it. Never even misplaced it."
+    },
+    {
+      "file": "native/audio/kreely/defeat_07.wav",
+      "text": "That's one more for the wall. I'm gonna need a bigger wall."
+    },
+    {
+      "file": "native/audio/kreely/defeat_08.wav",
+      "text": "Tell the devil Kreese says hi. He owes me twenty bucks."
+    },
+    {
+      "file": "native/audio/kreely/defeat_09.wav",
+      "text": "Retired, my ass."
+    },
+    {
+      "file": "native/audio/kreely/defeat_10.wav",
+      "text": "Lights out, princess."
+    }
+  ],
+  "knockdown": [
+    {
+      "file": "native/audio/kreely/knockdown_01.wav",
+      "text": "Down you go!"
+    },
+    {
+      "file": "native/audio/kreely/knockdown_02.wav",
+      "text": "Floor's comfy, huh? Stay a while."
+    },
+    {
+      "file": "native/audio/kreely/knockdown_03.wav",
+      "text": "Timber!"
+    },
+    {
+      "file": "native/audio/kreely/knockdown_04.wav",
+      "text": "Get up! I ain't done with you."
+    },
+    {
+      "file": "native/audio/kreely/knockdown_05.wav",
+      "text": "Did that hurt? It looked like it hurt."
+    },
+    {
+      "file": "native/audio/kreely/knockdown_06.wav",
+      "text": "That's a Kreely special. Free of charge."
+    },
+    {
+      "file": "native/audio/kreely/knockdown_07.wav",
+      "text": "Kiss the canvas, sweetheart."
+    },
+    {
+      "file": "native/audio/kreely/knockdown_08.wav",
+      "text": "And she drops like my third marriage!"
+    }
+  ],
+  "hurt": [
+    {
+      "file": "native/audio/kreely/hurt_01.wav",
+      "text": "Gah! You little..."
+    },
+    {
+      "file": "native/audio/kreely/hurt_02.wav",
+      "text": "Ow! Son of a... that's coming outta your hide."
+    },
+    {
+      "file": "native/audio/kreely/hurt_03.wav",
+      "text": "Okay. Okay. Now I'm mad."
+    },
+    {
+      "file": "native/audio/kreely/hurt_04.wav",
+      "text": "That all you got? ...Don't answer that."
+    },
+    {
+      "file": "native/audio/kreely/hurt_05.wav",
+      "text": "Hit me again. I dare ya. Actually, don't."
+    },
+    {
+      "file": "native/audio/kreely/hurt_06.wav",
+      "text": "Ugh! I felt that one in my liver. What's left of it."
+    },
+    {
+      "file": "native/audio/kreely/hurt_07.wav",
+      "text": "Lucky shot!"
+    },
+    {
+      "file": "native/audio/kreely/hurt_08.wav",
+      "text": "Damn it, that was my good side!"
+    }
+  ],
+  "near_death": [
+    {
+      "file": "native/audio/kreely/near_death_01.wav",
+      "text": "Oh, that ain't good... I'm leaking."
+    },
+    {
+      "file": "native/audio/kreely/near_death_02.wav",
+      "text": "I'm seeing two of you. Neither one of you is pretty."
+    },
+    {
+      "file": "native/audio/kreely/near_death_03.wav",
+      "text": "Not like this... not sober..."
+    },
+    {
+      "file": "native/audio/kreely/near_death_04.wav",
+      "text": "Howard was right. I should've stretched."
+    },
+    {
+      "file": "native/audio/kreely/near_death_05.wav",
+      "text": "Okay, time out. Time out! ...Nobody's calling time out."
+    },
+    {
+      "file": "native/audio/kreely/near_death_06.wav",
+      "text": "If I die out here, my liquor cabinet goes to nobody. NOBODY!"
+    },
+    {
+      "file": "native/audio/kreely/near_death_07.wav",
+      "text": "I've been worse. I can't remember when, but I've been worse."
+    },
+    {
+      "file": "native/audio/kreely/near_death_08.wav",
+      "text": "Ain't the first time I've been almost dead. Won't be the last."
+    }
+  ],
+  "teeth": [
+    {
+      "file": "native/audio/kreely/teeth_01.wav",
+      "text": "My teef! Thoze were my good teef!"
+    },
+    {
+      "file": "native/audio/kreely/teeth_02.wav",
+      "text": "Aw, come on! I just paid those off!"
+    },
+    {
+      "file": "native/audio/kreely/teeth_03.wav",
+      "text": "Thas... thas gonna cost ya, lady."
+    },
+    {
+      "file": "native/audio/kreely/teeth_04.wav",
+      "text": "Well, there goes dinner. Soup it is."
+    },
+    {
+      "file": "native/audio/kreely/teeth_05.wav",
+      "text": "Keep 'em. Something to remember me by."
+    },
+    {
+      "file": "native/audio/kreely/teeth_06.wav",
+      "text": "Hey! I wath uthing thothe!"
+    }
+  ]
+}

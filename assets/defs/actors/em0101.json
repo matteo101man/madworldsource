@@ -1,0 +1,716 @@
+{
+  "id": "em0101",
+  "name": "Kung-fu grunt (Asia Town zako; also the placeholder zako elsewhere)",
+  "kind": "zako",
+  "models": [
+    "native/kungfu-source.glb",
+    "native/kungfu-pack.glb"
+  ],
+  "motions": "native/kungfu-motion.json",
+  "hp": 120,
+  "power": 14,
+  "sense": 12.0,
+  "radius": 0.4,
+  "variants": [
+    {
+      "name": "A (claws)",
+      "hp": 120,
+      "near": 2,
+      "far": 5,
+      "power": 0.5,
+      "evades": 1,
+      "evade": 10,
+      "attacks": [
+        "claw1",
+        "claw2"
+      ]
+    },
+    {
+      "name": "B (gourd, fire)",
+      "hp": 200,
+      "near": 100,
+      "far": 100,
+      "power": 1.5,
+      "evades": 255,
+      "evade": 30,
+      "attacks": [
+        "fire"
+      ]
+    }
+  ],
+  "anims": {
+    "idle": "em0101_0000.mot"
+  },
+  "pools": {
+    "laughs": [
+      "em0110_0045.mot",
+      "em0110_0046.mot",
+      "em0110_004c.mot",
+      "em0110_004d.mot",
+      "em0110_004e.mot"
+    ],
+    "threats": [
+      "em0110_0042.mot",
+      "em0110_0043.mot",
+      "em0110_0044.mot"
+    ]
+  },
+  "attacks": [
+    {
+      "name": "claw1",
+      "clip": "em0101_0104.mot",
+      "windows": [
+        [
+          20,
+          24
+        ],
+        [
+          31,
+          35
+        ]
+      ],
+      "combo": 37,
+      "range": 2.2,
+      "yaw": 15,
+      "atk": 371
+    },
+    {
+      "name": "claw2",
+      "clip": "em0101_0105.mot",
+      "windows": [
+        [
+          16,
+          21
+        ],
+        [
+          26,
+          31
+        ]
+      ],
+      "combo": 33,
+      "range": 2.8,
+      "yaw": 20,
+      "atk": 371
+    },
+    {
+      "name": "claw3",
+      "clip": "em0101_0106.mot",
+      "windows": [
+        [
+          7,
+          12
+        ]
+      ],
+      "range": 3.5,
+      "yaw": 30,
+      "atk": 371
+    },
+    {
+      "name": "fire",
+      "clip": "em0101_0110.mot",
+      "windows": [
+        [
+          55,
+          88
+        ]
+      ],
+      "range": 3.5,
+      "yaw": 30,
+      "atk": 371
+    },
+    {
+      "name": "dash",
+      "clip": "em0110_010d.mot",
+      "windows": [
+        [
+          26,
+          31
+        ]
+      ],
+      "range": 4.5,
+      "yaw": 15,
+      "atk": 371
+    }
+  ],
+  "tune": {
+    "alive": 4
+  },
+  "editor": {
+    "stage": "street",
+    "focus": 1.1,
+    "groups": [
+      {
+        "name": "Attacks",
+        "entries": [
+          {
+            "label": "Claw combo (1-2-3)",
+            "do": "move",
+            "arg": "claw1",
+            "note": "Up to three claw strikes (claws outfit)"
+          },
+          {
+            "label": "Claw 2",
+            "do": "move",
+            "arg": "claw2"
+          },
+          {
+            "label": "Claw 3",
+            "do": "move",
+            "arg": "claw3"
+          },
+          {
+            "label": "Fire breath",
+            "do": "move",
+            "arg": "fire",
+            "note": "Sets the player burning (gourd outfit)"
+          },
+          {
+            "label": "Dash attack",
+            "do": "move",
+            "arg": "dash",
+            "note": "em0110_010d"
+          }
+        ]
+      },
+      {
+        "name": "Hurt",
+        "entries": [
+          {
+            "label": "Light hit",
+            "do": "hurt",
+            "arg": "light"
+          },
+          {
+            "label": "Heavy hit",
+            "do": "hurt",
+            "arg": "heavy"
+          },
+          {
+            "label": "Hit from behind",
+            "do": "hurt",
+            "arg": "back"
+          },
+          {
+            "label": "Hit from the left",
+            "do": "hurt",
+            "arg": "left"
+          },
+          {
+            "label": "Hit from the right",
+            "do": "hurt",
+            "arg": "right"
+          },
+          {
+            "label": "Pistol round",
+            "do": "hurt",
+            "arg": "shot",
+            "note": "A headshot takes the head off"
+          },
+          {
+            "label": "Swept (God Hand)",
+            "do": "hurt",
+            "arg": "sweep",
+            "note": "Kreely's sweep"
+          },
+          {
+            "label": "Launched",
+            "do": "hurt",
+            "arg": "launch",
+            "note": "Flies at low HP"
+          },
+          {
+            "label": "Stunned",
+            "do": "move",
+            "arg": "stun",
+            "note": "Dizzy for 5 s"
+          },
+          {
+            "label": "Fainted",
+            "do": "move",
+            "arg": "faint",
+            "note": "Reels at 40 % HP for 4 s: open to the chainsaw finisher"
+          },
+          {
+            "label": "Chainsaw split: vertical",
+            "do": "move",
+            "arg": "split_vertical",
+            "note": "Jack's finisher on a fainted grunt (pl0030_0403): he falls apart in two halves"
+          },
+          {
+            "label": "Chainsaw split: waist",
+            "do": "move",
+            "arg": "split_waist",
+            "note": "Jack's finisher cut across the waist (pl0030_0404): the upper body flies off, the legs stand"
+          }
+        ]
+      },
+      {
+        "name": "Death",
+        "entries": [
+          {
+            "label": "Killed",
+            "do": "kill",
+            "arg": "",
+            "note": "Heavy kills take the head off"
+          },
+          {
+            "label": "Hit the corpse",
+            "do": "hurt",
+            "arg": "heavy"
+          }
+        ]
+      },
+      {
+        "name": "Taunts",
+        "entries": [
+          {
+            "label": "Laugh",
+            "do": "move",
+            "arg": "laugh"
+          },
+          {
+            "label": "Threat",
+            "do": "move",
+            "arg": "threat"
+          },
+          {
+            "label": "Spotted",
+            "do": "move",
+            "arg": "spotted"
+          },
+          {
+            "label": "Frightened",
+            "do": "move",
+            "arg": "fear",
+            "note": "Startled, runs, comes back"
+          }
+        ]
+      },
+      {
+        "name": "Defence",
+        "entries": [
+          {
+            "label": "Dodge (back-jump)",
+            "do": "move",
+            "arg": "dodge"
+          },
+          {
+            "label": "Guard",
+            "do": "move",
+            "arg": "guard",
+            "note": "Two hits spark off it, the third lands"
+          }
+        ]
+      },
+      {
+        "name": "Grabs",
+        "entries": [
+          {
+            "label": "Player grabs him",
+            "do": "pair",
+            "arg": "grab",
+            "note": "Kreely suplexes him; Jack catches and carries"
+          }
+        ]
+      },
+      {
+        "name": "Outfits",
+        "entries": [
+          {
+            "label": "Outfit A (claws)",
+            "do": "move",
+            "arg": "outfit_a"
+          },
+          {
+            "label": "Outfit B (gourd, fire)",
+            "do": "move",
+            "arg": "outfit_b"
+          }
+        ]
+      },
+      {
+        "name": "Player",
+        "entries": [
+          {
+            "label": "Player: punch",
+            "do": "input",
+            "arg": "punch"
+          },
+          {
+            "label": "Player: swing",
+            "do": "input",
+            "arg": "swing"
+          },
+          {
+            "label": "Player: taunt",
+            "do": "input",
+            "arg": "taunt",
+            "note": "Provokes him"
+          },
+          {
+            "label": "Reset",
+            "do": "reset",
+            "arg": ""
+          }
+        ]
+      }
+    ],
+    "clip_groups": [
+      {
+        "name": "own (em0101)",
+        "prefixes": [
+          "em0101_"
+        ]
+      },
+      {
+        "name": "moves, reactions",
+        "prefixes": [
+          "em0110_00"
+        ]
+      },
+      {
+        "name": "hurt, down, held",
+        "prefixes": [
+          "em0110_10"
+        ]
+      },
+      {
+        "name": "God Hand",
+        "prefixes": [
+          "gh_"
+        ]
+      }
+    ]
+  },
+  "names": {
+    "clips": {
+      "em0101_0000.mot": "Idle stance",
+      "em0101_0010.mot": "Walk forward",
+      "em0101_0011.mot": "Side-walk right",
+      "em0101_0012.mot": "Side-walk left",
+      "em0101_0020.mot": "Jump: take-off",
+      "em0101_0021.mot": "Jump/fall: airborne loop",
+      "em0101_0022.mot": "Jump/fall: landing",
+      "em0101_0030.mot": "High jump (3.7 m up)",
+      "em0101_0031.mot": "High jump in place (3.1 m up)",
+      "em0101_0032.mot": "Long leap (7.6 m)",
+      "em0101_0033.mot": "Long high leap (8 m)",
+      "em0101_0034.mot": "Appear: leap up from below",
+      "em0101_0035.mot": "Appear: climb up from below",
+      "em0101_0101.mot": "Far dash attack: lead-in [unused]",
+      "em0101_0102.mot": "Far dash attack: strike [unused]",
+      "em0101_0103.mot": "Far dash attack: follow-through [unused]",
+      "em0101_0104.mot": "Claw strike 1 (two hits)",
+      "em0101_0105.mot": "Claw strike 2 (lunge, two hits)",
+      "em0101_0106.mot": "Claw strike 3 (combo finisher)",
+      "em0101_0110.mot": "Fire breath (gourd outfit)",
+      "em0101_0121.mot": "Back-jump dodge (2.3 m)",
+      "em0110_1313.mot": "Scripted warn-walk loop",
+      "em0110_1314.mot": "Shared 13xx move (long)",
+      "em0110_1315.mot": "Shared 13xx move (1.7 m back)",
+      "em0110_1316.mot": "Shared 13xx move (3 m fwd)",
+      "em0110_1317.mot": "Shared 13xx move (3.3 m fwd)",
+      "em0110_1318.mot": "Shared 13xx move (1.5 m fwd)",
+      "em0110_1319.mot": "Shared 13xx move (2.9 m fwd)",
+      "em0110_131a.mot": "Shared 13xx move, crouching",
+      "em0110_131b.mot": "Shared 13xx: drop to crouch",
+      "em0110_131c.mot": "Shared 13xx: on the ground loop",
+      "em0110_131d.mot": "Blast-furnace death (variant)",
+      "em0110_131e.mot": "Scripted warn gesture",
+      "em0110_1000.mot": "Hit: light flinch",
+      "em0110_1001.mot": "Hit: pushed back (default)",
+      "em0110_1002.mot": "Hit: pushed back, sags (type 7) [unused]",
+      "em0110_1004.mot": "Hit: jolt (bat hit)",
+      "em0110_1005.mot": "Hit: pushed back (type 0xd) [unused]",
+      "em0110_1008.mot": "Hit: knocked off his feet",
+      "em0110_100b.mot": "Kukri heavy hit: collapse",
+      "em0110_100c.mot": "Overhead throw: flight",
+      "em0110_100d.mot": "Overhead throw: airborne",
+      "em0110_100e.mot": "Overhead throw: landing",
+      "em0110_100f.mot": "Overhead throw flight (alt room) [unused]",
+      "em0110_1013.mot": "Side throw: flight",
+      "em0110_1014.mot": "Side throw: airborne",
+      "em0110_1015.mot": "Side throw: landing",
+      "em0110_1016.mot": "Overhead throw flight (long) [unused]",
+      "em0110_1017.mot": "Grabbed (catch type 0x38)",
+      "em0110_1018.mot": "Bat charge blow: flight [unused]",
+      "em0110_1019.mot": "Bat charge blow: down [unused]",
+      "em0110_101a.mot": "Blown away: falling [unused]",
+      "em0110_101b.mot": "Hit by dash attack (3.2 m back) [unused]",
+      "em0110_101c.mot": "Impaled on spike/sign (loop)",
+      "em0110_101d.mot": "Impaled: slides off",
+      "em0110_101e.mot": "Off the impale: lands (alive)",
+      "em0110_101f.mot": "Off the impale: lands (dead)",
+      "em0110_1020.mot": "Kukri charge: limb cut (A)",
+      "em0110_1021.mot": "Kukri charge: limb cut (B)",
+      "em0110_1026.mot": "Hit by chainsaw swing",
+      "em0110_1027.mot": "Limp body (env. kill/stomped)",
+      "em0110_1032.mot": "Killed: falls back",
+      "em0110_1033.mot": "Knocked up, lands on back",
+      "em0110_1034.mot": "Falls forward far (3.8 m)",
+      "em0110_1035.mot": "Weapon-combo knockdown",
+      "em0110_1036.mot": "Hit, falls (rig variant) [unused]",
+      "em0110_1037.mot": "Hit, falls (rig variant, mirror)",
+      "em0110_1038.mot": "Lying down (loop)",
+      "em0110_1039.mot": "Down face-down (loop)",
+      "em0110_103a.mot": "Slow stand-up after cowering",
+      "em0110_103d.mot": "Stand up",
+      "em0110_1043.mot": "Catch attack: fall forward",
+      "em0110_1044.mot": "Fall back, lies",
+      "em0110_1046.mot": "Stagger back",
+      "em0110_1049.mot": "Finisher: forced to knees",
+      "em0110_104a.mot": "Finisher: kneeling (loop)",
+      "em0110_104b.mot": "Finisher: knees to lying",
+      "em0110_104d.mot": "Chainsaw 3-hit combo: blown back",
+      "em0110_104e.mot": "Blown back 3.4 m (mirror)",
+      "em0110_104f.mot": "Crawler: climbs up",
+      "em0110_1050.mot": "Giant swing: lifted off the ground [unused]",
+      "em0110_1051.mot": "Giant swing: spin loop [unused]",
+      "em0110_1052.mot": "Giant swing: thrown, lands [unused]",
+      "em0110_1053.mot": "Giant swing: released [unused]",
+      "em0110_105c.mot": "Hit while down (face-up)",
+      "em0110_105d.mot": "Hit while down (face-down)",
+      "em0110_1060.mot": "Neckspring get-up",
+      "em0110_1063.mot": "Guard",
+      "em0110_1064.mot": "Flick attack (shrug-off)",
+      "em0110_1071.mot": "Grabbed: caught",
+      "em0110_1072.mot": "Grabbed: held (loop)",
+      "em0110_1073.mot": "Grabbed: let go",
+      "em0110_1074.mot": "Head-butted while struggling [unused]",
+      "em0110_1075.mot": "Hop back / shake free",
+      "em0110_1076.mot": "Grabbed: starts struggling",
+      "em0110_1077.mot": "Grabbed: struggle (loop)",
+      "em0110_1078.mot": "Stunned (dizzy loop)",
+      "em0110_1079.mot": "Grabbed: head-butted",
+      "em0110_1082.mot": "Kukri/bound blow: crumple",
+      "em0110_1083.mot": "Punch hit (rig variant) [unused]",
+      "em0110_1084.mot": "Rig-variant hit: follow-up",
+      "em0110_1085.mot": "Bound throw: flight [unused]",
+      "em0110_1086.mot": "Area grab: lifted",
+      "em0110_1087.mot": "Area grab: held up (loop)",
+      "em0110_1088.mot": "Area grab: thrown far, lies",
+      "em0110_1090.mot": "Launched: flight (A)",
+      "em0110_1091.mot": "Launched: flight (B)",
+      "em0110_1092.mot": "Double chainsaw blow: flight [unused]",
+      "em0110_1093.mot": "Double chainsaw blow: airborne [unused]",
+      "em0110_1094.mot": "Double chainsaw blow: down [unused]",
+      "em0110_1095.mot": "Launched: landing (A)",
+      "em0110_1096.mot": "Launched: landing (B)",
+      "em0110_1097.mot": "Bat charge blow: long flight [unused]",
+      "em0110_10a0.mot": "Punch-chainsaw combo: launched",
+      "em0110_10a3.mot": "Fly-away (full charge blow) [unused]",
+      "em0110_10a4.mot": "Guard break / heavy stagger",
+      "em0110_10a5.mot": "Punch combo hit 1",
+      "em0110_10a6.mot": "Punch combo hit 2",
+      "em0110_10a7.mot": "Punch combo hit 3",
+      "em0110_10a8.mot": "Punch combo hit 4",
+      "em0110_10a9.mot": "Knocked down, lies (10a9)",
+      "em0110_10aa.mot": "Chainsaw skewer: stage 1",
+      "em0110_10ab.mot": "Chainsaw skewer: stage 2",
+      "em0110_10ac.mot": "Chainsaw skewer: thrown off",
+      "em0110_10ad.mot": "Mad Buster: slammed down",
+      "em0110_10ae.mot": "Down throw: flight [unused]",
+      "em0110_1100.mot": "Leg lost: falls to sitting",
+      "em0110_1101.mot": "One leg lost: sitting (loop)",
+      "em0110_1102.mot": "Leg lost (bit 4): falls sitting",
+      "em0110_1103.mot": "Other leg lost: sitting (loop)",
+      "em0110_1109.mot": "Cornered/legless: cowers down",
+      "em0110_110a.mot": "Legless: lying (loop)",
+      "em0110_110b.mot": "Cower loop / crawl loop",
+      "em0110_110c.mot": "Lower legs lost: drops",
+      "em0110_110e.mot": "Stump walk / death stagger",
+      "em0110_1110.mot": "Parts-restore pose (1110)",
+      "em0110_1112.mot": "Parts-restore pose (1112)",
+      "em0110_1114.mot": "Hit by Franken flick",
+      "em0110_111d.mot": "Tired / faint crouch (loop)",
+      "em0110_1120.mot": "Pain / faint standing (loop)",
+      "em0110_1122.mot": "Clutching cut limb (A) loop",
+      "em0110_1123.mot": "Clutching cut limb (B) loop",
+      "em0110_1130.mot": "Chainsaw vertical split: half A",
+      "em0110_1131.mot": "Chainsaw vertical split: half B",
+      "em0110_1132.mot": "Chainsaw waist cut: half A",
+      "em0110_1133.mot": "Chainsaw waist cut: half B",
+      "em0110_0011.mot": "Walk backward",
+      "em0110_0012.mot": "Run forward",
+      "em0110_0013.mot": "Turn in place [unused]",
+      "em0110_002b.mot": "Side-run right",
+      "em0110_002c.mot": "Side-run left",
+      "em0110_0036.mot": "Spotted the player",
+      "em0110_0042.mot": "Threat 1",
+      "em0110_0043.mot": "Threat 2",
+      "em0110_0044.mot": "Threat 3 (long)",
+      "em0110_0045.mot": "Laugh 1",
+      "em0110_0046.mot": "Laugh 2",
+      "em0110_004c.mot": "Laugh 3",
+      "em0110_004d.mot": "Laugh 4",
+      "em0110_004e.mot": "Laugh 5 (doubled over)",
+      "em0110_010d.mot": "Dash attack",
+      "em0110_0015.mot": "Fear: run away (B)",
+      "em0110_0016.mot": "Fear: startled (A)",
+      "em0110_0017.mot": "Fear: startled, steps back (B)",
+      "em0110_0018.mot": "Fear: run away (A)",
+      "em0110_0030.mot": "Fear: stop running (B)",
+      "em0110_1512.mot": "Fear: stop running (A)"
+    },
+    "voices": {
+      "4098": {
+        "name": "Fear: turns and flees (0x1002)",
+        "trigger": "A frightened grunt turns to run: the end of his startle, when the 80% flee roll passes (fear_to_escape)"
+      },
+      "4256": {
+        "name": "Blown away by explosion (0x10a0)",
+        "trigger": "decideDamageProc alive branch LAB_810258d0: a hit of type 0x6b GRENADE, 0xf0 OIL_DRUM, 0x19c DYNAMITE or 0x1ab DYNAMITE_WEAK that sends the grunt to motion_blow 0x45. Gated by obj id == 0x20170, so em0101 (0x20101) never plays it; the same hit launches em0101 with no voice."
+      },
+      "4103": {
+        "name": "Killed by explosion (0x1007)",
+        "trigger": "decideDamageProc lethal path (HP <= 0, label 81024144, after setDead): hit type 0xf0 OIL_DRUM (after addResult(0x13)) or 0x19c DYNAMITE. No obj-id gate, so em0101 plays it."
+      },
+      "4099": {
+        "name": "Voice 0x1003 (bills_target)",
+        "trigger": "bills_target state 0x84 (81036270)"
+      },
+      "4100": {
+        "name": "Voice 0x1004 (object hit)",
+        "trigger": "decideDamageProc object-hit branch (ATHIT about 0xf6-0xf7, below 0xf8 OBJ_ATTACK), alive, flag 0x1184 bit 0x13 clear, gated by vfunc 0x2b4 bit 0x20"
+      },
+      "4101": {
+        "name": "Voice 0x1005 (refDamage)",
+        "trigger": "refDamage 81016f3c"
+      },
+      "4096": {
+        "name": "Voice 0x1000 (pickup_catch_obj)",
+        "trigger": "pickup_catch_obj state 0x4c (8104d1b4)"
+      },
+      "4097": {
+        "name": "Voice 0x1001 (pickup_catch_obj)",
+        "trigger": "pickup_catch_obj state 0x4c (8104d1b4)"
+      },
+      "4258": {
+        "name": "Voice 0x10a2 (fear, 0x20170 only)",
+        "trigger": "fear_to_escape sub 1 for obj 0x20170 instead of 0x1002"
+      },
+      "4386": {
+        "name": "Voice 0x1122 (fear, 0x20200 only)",
+        "trigger": "fear_to_escape sub 1 for obj 0x20200 instead of 0x1002"
+      },
+      "4257": {
+        "name": "Voice 0x10a1 (catch_target_idle)",
+        "trigger": "catch_target_idle 0x6c (81057c08), a zako holding a target"
+      },
+      "4260": {
+        "name": "Voice 0x10a4 (decideDamageProc)",
+        "trigger": "top of decideDamageProc: attacker obj 0x20190, or the dmSpine path for type 0x134"
+      },
+      "4233": {
+        "name": "Voice 0x1089 (0x20170 only)",
+        "trigger": "decideDamageProc, types 0x119-0x11c, obj 0x20170 only, 50 %"
+      },
+      "4249": {
+        "name": "Voice 0x1099 (type 0x125)",
+        "trigger": "decideDamageProc blow-type branch, ATHIT 0x125"
+      },
+      "4261": {
+        "name": "Voice 0x10a5",
+        "trigger": "damage_obj 0x03 (81027348) and decideDamageProc"
+      },
+      "4147": {
+        "name": "Voice 0x1033 (motion_blow)",
+        "trigger": "motion_blow 0x45 (81049db0); likely the physics fly-away voice (ZAKO-AI 4.7)"
+      },
+      "4263": {
+        "name": "Voice 0x10a7 (onPreMove)",
+        "trigger": "onPreMove 8100d95c"
+      },
+      "4218": {
+        "name": "Voice 0x107a (chkDeadAttribute)",
+        "trigger": "chkDeadAttribute 8100fc40 (deadly BG attribute)"
+      },
+      "4215": {
+        "name": "Voice 0x1077 (chkDeadFloor)",
+        "trigger": "chkDeadFloor 81010160 (deadly floor)"
+      },
+      "4253": {
+        "name": "Voice 0x109d (dmRecover)",
+        "trigger": "dmRecover 8101a138"
+      },
+      "4251": {
+        "name": "Voice 0x109b (appear, 0x20150)",
+        "trigger": "appear type 3 for obj 0x20150"
+      },
+      "4250": {
+        "name": "Voice 0x109a (appear_stuck)",
+        "trigger": "appear_stuck 0x13 (8103b9f0)"
+      },
+      "4255": {
+        "name": "Voice 0x109f (chkEmEvent)",
+        "trigger": "chkEmEvent 8102a034 (scripted event)"
+      },
+      "4254": {
+        "name": "Voice 0x109e (onRecvMsg)",
+        "trigger": "onRecvMsg 810595dc"
+      },
+      "4415": {
+        "name": "Voice 0x113f (face_guard)",
+        "trigger": "face_guard 0x2a (81045020)"
+      },
+      "4385": {
+        "name": "Voice 0x1121 (refDamage)",
+        "trigger": "refDamage 81016f3c"
+      },
+      "4140": {
+        "name": "Voices 0x102c-0x102e (dead_train)",
+        "trigger": "dead_train 0x81 (81042b04), hit by a train"
+      }
+    },
+    "cameras": {},
+    "phases": {
+      "state": {
+        "Wait": "Waiting (has not spotted the player)",
+        "Spotted": "Spotted the player",
+        "Siege(Hold)": "Besieging: holding his slot",
+        "Siege(Return)": "Besieging: returning to his slot",
+        "Siege(Step)": "Besieging: side-walking to his slot",
+        "Siege(Back)": "Besieging: backing off",
+        "Siege(Approach)": "Attacker: closing in to strike",
+        "Attack(0)": "Attack: claw strike 1",
+        "Attack(1)": "Attack: claw strike 2",
+        "Attack(2)": "Attack: claw strike 3",
+        "Attack(3)": "Attack: fire breath",
+        "Attack(4)": "Attack: dash attack",
+        "Damage": "Hurt",
+        "Dodge": "Back-jump dodge",
+        "Launched": "Launched: in flight",
+        "Land": "Launched: landing",
+        "Swept": "Swept off his feet",
+        "Suplexed": "Suplexed by Kreely",
+        "Down": "Lying down",
+        "GetUp": "Getting up",
+        "Piyori": "Stunned",
+        "Laugh": "Laughing at the dead player",
+        "Fear(0)": "Frightened: startled",
+        "Fear(1)": "Frightened: running away",
+        "Fear(2)": "Frightened: stopping",
+        "Held(false)": "Grabbed: held",
+        "Held(true)": "Grabbed: struggling",
+        "Headbutted": "Grabbed: head-butted",
+        "Released": "Grabbed: let go",
+        "Escape": "Grabbed: shaking free",
+        "Thrown(0)": "Thrown: flight",
+        "Thrown(1)": "Thrown: airborne",
+        "Thrown(2)": "Thrown: landing",
+        "Guard": "Guarding",
+        "Sidestep": "Dodging aside / hopping back",
+        "Provoke(false)": "Taunted: threatening",
+        "Provoke(true)": "Taunted: running at the player",
+        "Editor": "Editor: playing a clip",
+        "Dead": "Dead",
+        "Fear(3)": "Cornered: cowering",
+        "Fear(4)": "Cornered: shaking",
+        "Fear(5)": "Cornered: standing up"
+      }
+    }
+  },
+  "voices": {
+    "flee": 4098
+  }
+}

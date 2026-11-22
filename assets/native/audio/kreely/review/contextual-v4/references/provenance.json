@@ -1,0 +1,107 @@
+{
+  "source": "Original user-recorded Bender impressions",
+  "processing": "Mono, 48 kHz, edge silence trim with breathing room, constant gain per clip, short gaps. No pitch/formant shift.",
+  "references": {
+    "taunt": {
+      "file": "D:\\Games\\gamesfordecomp\\ports\\madworld-rinrin\\assets\\native\\audio\\kreely\\review\\contextual-v4\\references\\taunt.wav",
+      "duration_s": 12.522708333333334,
+      "sha256": "0455cef846dc1dd9f3fa4fbf4e3f9d2b468206caf194ec810ab8dfb3f88745b4",
+      "sources": [
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 002.wav",
+          "sha256": "34bdf4add74ef2efd1b6afb3ca6bb4b25f07b1256ce2818c917402452937b300",
+          "used_seconds": 1.9733333333333334
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 007.wav",
+          "sha256": "581d32115a6cb2b7b57a45c1fd0461d7b1fe9a52d29a07f08d9f6b22bf92c63c",
+          "used_seconds": 2.016
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 009.wav",
+          "sha256": "8ec26c1fc32b5941d62cf12bd57dc70e404ddb538d3a472a45821993998529b2",
+          "used_seconds": 2.1866666666666665
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 013.wav",
+          "sha256": "73e497230762520cc05a5e330db45115d0c217d2cb4ef44a4d6715d1f8b9d3f3",
+          "used_seconds": 3.4080208333333335
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 016.wav",
+          "sha256": "0cfda55a96f852063214d1bbad966dce16b0bbf8d62a59261f2896717713731e",
+          "used_seconds": 2.4586875
+        }
+      ]
+    },
+    "challenge": {
+      "file": "D:\\Games\\gamesfordecomp\\ports\\madworld-rinrin\\assets\\native\\audio\\kreely\\review\\contextual-v4\\references\\challenge.wav",
+      "duration_s": 11.52275,
+      "sha256": "b73205964f151902e240f9aef057ecfcbbbc111ce792693b43a05cc4919e4d41",
+      "sources": [
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 003.wav",
+          "sha256": "b40ec32ab4daf67e9fdb3de987c5bb401783e6d79887a410f6d842d9ab055e21",
+          "used_seconds": 1.7653541666666666
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 005.wav",
+          "sha256": "e0910504195c3f2364d88713cfe935b0417f567976ccd7229e2bc2ed6e4ff344",
+          "used_seconds": 3.0346875
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 007.wav",
+          "sha256": "581d32115a6cb2b7b57a45c1fd0461d7b1fe9a52d29a07f08d9f6b22bf92c63c",
+          "used_seconds": 2.016
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 008.wav",
+          "sha256": "45f75127843d828ed3f4d825210243217e61bdc5d987a88dcb1f5550405eae74",
+          "used_seconds": 1.7680208333333334
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 016.wav",
+          "sha256": "0cfda55a96f852063214d1bbad966dce16b0bbf8d62a59261f2896717713731e",
+          "used_seconds": 2.4586875
+        }
+      ]
+    },
+    "pain": {
+      "file": "D:\\Games\\gamesfordecomp\\ports\\madworld-rinrin\\assets\\native\\audio\\kreely\\review\\contextual-v4\\references\\pain.wav",
+      "duration_s": 13.1200625,
+      "sha256": "e3f08177ba30383b4ede317765d298eacd8df2d1bd6440f637e11faf04c93738",
+      "sources": [
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 016.wav",
+          "sha256": "0cfda55a96f852063214d1bbad966dce16b0bbf8d62a59261f2896717713731e",
+          "used_seconds": 2.4586875
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 018.wav",
+          "sha256": "fb852c3d5ee8f5cf30242fbf980d8f6f0e53835e58a456762a893375fb159e6d",
+          "used_seconds": 1.9626666666666666
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 019.wav",
+          "sha256": "11b6e17e645886eafef694f8b84ea9e8d0c16ab770337c805ed38e3cd4bb8d36",
+          "used_seconds": 1.6826666666666668
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 020.wav",
+          "sha256": "c93a85a97d8a7969fdab96795b8b60f87762ac0bc2d3a7d1c4aa04add23a2037",
+          "used_seconds": 1.9253541666666667
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 021.wav",
+          "sha256": "25b6074f7c06643bc61658c38b14455ab44e4ed52f15187fe186fa6e5f26c996",
+          "used_seconds": 2.2933333333333334
+        },
+        {
+          "file": "C:\\Users\\Matteo\\Desktop\\My impressions - Voice Clips\\Individual Clips\\Bender - 023.wav",
+          "sha256": "2b29b3e4d36985afb4e8b6391dccf4dec7076719b96772a9896e42aa8fffee09",
+          "used_seconds": 2.1973541666666665
+        }
+      ]
+    }
+  }
+}

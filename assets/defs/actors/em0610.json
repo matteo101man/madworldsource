@@ -1,0 +1,361 @@
+{
+  "id": "em0610",
+  "name": "Mathilda (c503, the added boss)",
+  "kind": "boss",
+  "models": [
+    "native/mathilda-source.glb",
+    "native/mathilda-color.glb"
+  ],
+  "motions": "native/mathilda-motion.json",
+  "hp": 1000,
+  "_notes": {
+    "module": "play_baron.rs (ed_cmd, the variant)",
+    "clips": "her swings are Jack's pl0030_14xx on her rig; her reactions RinRin's em0440_10xx (Clip: by name)"
+  },
+  "editor": {
+    "stage": "mathilda",
+    "focus": 1.2,
+    "cameras": [],
+    "groups": [
+      {
+        "name": "Attacks",
+        "entries": [
+          {
+            "label": "Swing",
+            "do": "move",
+            "arg": "swing"
+          },
+          {
+            "label": "Follow-through",
+            "do": "move",
+            "arg": "follow"
+          },
+          {
+            "label": "Wound-up swing",
+            "do": "move",
+            "arg": "windup"
+          },
+          {
+            "label": "Big smash",
+            "do": "move",
+            "arg": "smash",
+            "note": "Knocks him down"
+          }
+        ]
+      },
+      {
+        "name": "Hurt",
+        "entries": [
+          {
+            "label": "Light hit",
+            "do": "hurt",
+            "arg": "light"
+          },
+          {
+            "label": "Heavy hit",
+            "do": "hurt",
+            "arg": "heavy"
+          },
+          {
+            "label": "Hit from behind",
+            "do": "hurt",
+            "arg": "back"
+          },
+          {
+            "label": "Hit from the left",
+            "do": "hurt",
+            "arg": "left"
+          },
+          {
+            "label": "Hit from the right",
+            "do": "hurt",
+            "arg": "right"
+          },
+          {
+            "label": "Pistol round",
+            "do": "hurt",
+            "arg": "shot"
+          }
+        ]
+      },
+      {
+        "name": "Death",
+        "entries": [
+          {
+            "label": "Down to the dizzy wait",
+            "do": "kill",
+            "arg": ""
+          }
+        ]
+      },
+      {
+        "name": "Taunts",
+        "entries": [
+          {
+            "label": "Threat",
+            "do": "move",
+            "arg": "threat"
+          }
+        ]
+      },
+      {
+        "name": "Defence",
+        "entries": [
+          {
+            "label": "Guard",
+            "do": "move",
+            "arg": "guard"
+          },
+          {
+            "label": "Avoid",
+            "do": "move",
+            "arg": "avoid"
+          }
+        ]
+      },
+      {
+        "name": "Power struggle",
+        "entries": [
+          {
+            "label": "Pin - player wins",
+            "do": "pair",
+            "arg": "pin",
+            "win": true,
+            "note": "Under her bat; he fills the meter"
+          },
+          {
+            "label": "Pin - player loses",
+            "do": "pair",
+            "arg": "pin",
+            "win": false,
+            "note": "Her beat-down to its last blow"
+          },
+          {
+            "label": "Pin - play it yourself",
+            "do": "pair",
+            "arg": "pin",
+            "note": "F2, then tap A / D"
+          }
+        ]
+      },
+      {
+        "name": "Finishers",
+        "entries": [
+          {
+            "label": "Finishing blow",
+            "do": "pair",
+            "arg": "finisher",
+            "win": true,
+            "note": "The blow on her dizzy wait"
+          },
+          {
+            "label": "Execution (player's last life)",
+            "do": "execution",
+            "arg": "",
+            "note": "Her pin to its last blow"
+          }
+        ]
+      },
+      {
+        "name": "Borrowed clips",
+        "entries": [
+          {
+            "label": "Hurt from the right (light)",
+            "do": "clip",
+            "arg": "em0440_1000.mot"
+          },
+          {
+            "label": "Hurt from the left (light)",
+            "do": "clip",
+            "arg": "em0440_1001.mot"
+          },
+          {
+            "label": "Hurt in the body (heavy)",
+            "do": "clip",
+            "arg": "em0440_1002.mot"
+          },
+          {
+            "label": "Knocked down (also defeated)",
+            "do": "clip",
+            "arg": "em0440_1003.mot"
+          },
+          {
+            "label": "Dizzy, finish-ready",
+            "do": "clip",
+            "arg": "em0440_1007.mot"
+          },
+          {
+            "label": "Guard (also raised while walking)",
+            "do": "clip",
+            "arg": "em0440_0003.mot"
+          }
+        ]
+      },
+      {
+        "name": "Player",
+        "entries": [
+          {
+            "label": "Player: punch",
+            "do": "input",
+            "arg": "punch"
+          },
+          {
+            "label": "Player: swing",
+            "do": "input",
+            "arg": "swing"
+          },
+          {
+            "label": "Player: grab",
+            "do": "input",
+            "arg": "grab"
+          },
+          {
+            "label": "Player: taunt",
+            "do": "input",
+            "arg": "taunt"
+          },
+          {
+            "label": "Reset",
+            "do": "reset",
+            "arg": ""
+          }
+        ]
+      }
+    ],
+    "clip_groups": [
+      {
+        "name": "own",
+        "prefixes": [
+          "em0610_0"
+        ]
+      },
+      {
+        "name": "cutscene",
+        "prefixes": [
+          "em0610_ev"
+        ]
+      },
+      {
+        "name": "swings (Jack's)",
+        "prefixes": [
+          "pl0030_14"
+        ]
+      }
+    ]
+  },
+  "names": {
+    "clips": {
+      "em0610_0000.mot": "Idle (wait)",
+      "em0610_0001.mot": "Walk",
+      "em0610_0010.mot": "Bat beat-down (pin)",
+      "em0610_ev50_cut9.mot": "Final-fight intro take, cut 9 [unused]",
+      "em0610_ev50_cut10.mot": "Final-fight intro take, cut 10 [unused]",
+      "em0610_ev50_cut11.mot": "Taunt: bat on shoulder (ev50 cut 11)",
+      "em0610_ev50_cut12.mot": "Final-fight intro take, cut 12 [unused]",
+      "em0610_ev50_cut13.mot": "Final-fight intro take, cut 13 [unused]",
+      "em0610_ev50_cut14.mot": "Final-fight intro take, cut 14 [unused]",
+      "em0610_ev50_cut15.mot": "Final-fight intro take, cut 15 [unused]",
+      "em0610_ev50_cut16.mot": "Final-fight intro take, cut 16 [unused]",
+      "em0610_ev50_cut17.mot": "Final-fight intro take, cut 17 [unused]",
+      "em0610_ev50_cut18.mot": "Final-fight intro take, cut 18 [unused]",
+      "em0610_ev51_cut0.mot": "Baron's defeat scene, cut 0 [unused]",
+      "em0610_ev51_cut1.mot": "Baron's defeat scene, cut 1 [unused]",
+      "em0610_ev51_cut2.mot": "Baron's defeat scene, cut 2 [unused]",
+      "em0610_ev51_cut3.mot": "Baron's defeat scene, cut 3 [unused]",
+      "em0610_ev51_cut4.mot": "Baron's defeat scene, cut 4 [unused]",
+      "pl0030_140b.mot": "Bat swing (Jack's clip)",
+      "pl0030_140c.mot": "Bat follow-through (Jack's clip)",
+      "pl0030_1414.mot": "Wound-up bat swing (Jack's clip)",
+      "pl0030_140a.mot": "Big bat smash, knocks down",
+      "pl0030_1407.mot": "Jack weapon move, no hit window [unused]",
+      "pl0030_1409.mot": "Jack weapon move, no hit window [unused]",
+      "pl0030_140d.mot": "Jack weapon move, no hit window [unused]",
+      "pl0030_1419.mot": "Jack held-weapon move 1419 [unused]",
+      "pl0030_1431.mot": "Jack held-weapon move 1431 [unused]",
+      "pl0030_1432.mot": "Jack held-weapon move 1432 [unused]",
+      "pl0030_1433.mot": "Jack held-weapon move 1433 [unused]",
+      "pl0030_143c.mot": "Jack held-weapon move 143c [unused]",
+      "pl0030_1090.mot": "Get-up after a hard knockdown [unused]",
+      "pl0030_1091.mot": "Get up after knockdown",
+      "pl0030_1092.mot": "Get-up at high HP [unused]",
+      "em0440_0000.mot": "RinRin idle (replaced at spawn)",
+      "em0440_0002.mot": "Laugh over the fallen player",
+      "em0440_0003.mot": "Guard (also raised while walking)",
+      "em0440_0021.mot": "Intro drop: falling",
+      "em0440_0022.mot": "Intro drop: landing",
+      "em0440_0025.mot": "Dodge: right step",
+      "em0440_0026.mot": "Dodge: left step",
+      "em0440_0028.mot": "Dodge: back step",
+      "em0440_1000.mot": "Hurt from the right (light)",
+      "em0440_1001.mot": "Hurt from the left (light)",
+      "em0440_1002.mot": "Hurt in the body (heavy)",
+      "em0440_1003.mot": "Knocked down (also defeated)",
+      "em0440_1007.mot": "Dizzy, finish-ready"
+    },
+    "voices": {
+      "274": {
+        "name": "She blocks",
+        "trigger": "She raises her guard against a hit (RinRin's em0440_0003)"
+      },
+      "275": {
+        "name": "She takes a strong hit",
+        "trigger": "A heavy hit lands on her (hit types 0x2A..0x36, 0xCC..0xCE)"
+      },
+      "276": {
+        "name": "She takes a hit",
+        "trigger": "Any other hit; also when he throws her off and at her pin's last blow"
+      },
+      "277": {
+        "name": "Mathilda wins (player dead)",
+        "trigger": "The player dies; she laughs over him (em0440_0002)"
+      },
+      "283": {
+        "name": "Taunt",
+        "trigger": "She taunts at range, bat on her shoulder (ev50 cut 11)"
+      },
+      "285": {
+        "name": "Bat beat-down",
+        "trigger": "Her pin starts (variant); at the ropes, frame 80 of the bat combo"
+      },
+      "4120": {
+        "name": "Player low HP",
+        "trigger": "Player HP under 30% (repeats on its cooldown)"
+      }
+    },
+    "cameras": {
+      "pl0030_c493.mot": {
+        "name": "Bat beat-down at the ropes",
+        "actor": "em0610_0010.mot",
+        "player": "pl0030_1055.mot",
+        "scene": "Baron fight: his shoryuken sends Jack to her and she beats him with the bat"
+      },
+      "pl0030_c4ab.mot": {
+        "name": "Pin: struggle view",
+        "actor": "em0610_0010.mot",
+        "player": "pl0030_1055.mot",
+        "scene": "Variant: RinRin's struggle camera, looped, while Jack is pinned under her bat"
+      }
+    },
+    "phases": {
+      "Clash": {
+        "0": "Pinned under the bat (shake)",
+        "1": "Thrown off: she reels",
+        "2": "Finishing blow: he bounces"
+      },
+      "state": {
+        "Wait": "Idle",
+        "Threat": "Threat",
+        "Step": "Walking",
+        "Combo": "Bat swing string",
+        "Clash": "Pin under her bat",
+        "Avoid": "Dodging",
+        "Guard": "Guarding",
+        "Damage": "Hurt",
+        "Piyori": "Dizzy (finish-ready)",
+        "PlDead": "Taunting his body",
+        "Finished": "Finished off",
+        "Editor": "Editor clip"
+      }
+    }
+  }
+}

@@ -1,0 +1,473 @@
+{
+  "id": "em0440",
+  "name": "RinRin (c201 boss)",
+  "kind": "boss",
+  "models": [
+    "native/rinrin-source.glb",
+    "native/rinrin-color.glb",
+    "native/rinrin-pack.glb"
+  ],
+  "motions": "native/rinrin-motion.json",
+  "hp": 1600,
+  "_notes": {
+    "module": "her AI and pairs live in mw_sim::fight (Fight::rin_*); the editor hooks are play_editor.rs `rinrin`"
+  },
+  "editor": {
+    "stage": "rinrin",
+    "focus": 1.1,
+    "cameras": [
+      "rinrin-camera.json"
+    ],
+    "groups": [
+      {
+        "name": "Attacks",
+        "entries": [
+          {
+            "label": "Uraken",
+            "do": "move",
+            "arg": "uraken",
+            "note": "Her backfist"
+          },
+          {
+            "label": "Tetuzankou",
+            "do": "move",
+            "arg": "tetuzankou",
+            "note": "Her shoulder charge"
+          },
+          {
+            "label": "Giant slalom",
+            "do": "move",
+            "arg": "slalom",
+            "note": "Its opening lets him clash with her"
+          },
+          {
+            "label": "Fan throw",
+            "do": "move",
+            "arg": "fans",
+            "note": "Her fans fly at him"
+          }
+        ]
+      },
+      {
+        "name": "Hurt",
+        "entries": [
+          {
+            "label": "Light hit",
+            "do": "hurt",
+            "arg": "light"
+          },
+          {
+            "label": "Heavy hit",
+            "do": "hurt",
+            "arg": "heavy"
+          },
+          {
+            "label": "Hit from behind",
+            "do": "hurt",
+            "arg": "back"
+          },
+          {
+            "label": "Hit from the left",
+            "do": "hurt",
+            "arg": "left"
+          },
+          {
+            "label": "Hit from the right",
+            "do": "hurt",
+            "arg": "right"
+          },
+          {
+            "label": "Knocked down",
+            "do": "hurt",
+            "arg": "down",
+            "note": "A chainsaw-class blow: down, then up"
+          }
+        ]
+      },
+      {
+        "name": "Death",
+        "entries": [
+          {
+            "label": "Finish-ready",
+            "do": "kill",
+            "arg": "",
+            "note": "She staggers and falls, waiting for the finisher"
+          }
+        ]
+      },
+      {
+        "name": "Taunts",
+        "entries": [
+          {
+            "label": "Provocation",
+            "do": "move",
+            "arg": "taunt",
+            "note": "Her taunt"
+          }
+        ]
+      },
+      {
+        "name": "Defence",
+        "entries": [
+          {
+            "label": "Guard",
+            "do": "move",
+            "arg": "guard"
+          },
+          {
+            "label": "Step right",
+            "do": "move",
+            "arg": "right_step"
+          },
+          {
+            "label": "Step left",
+            "do": "move",
+            "arg": "left_step"
+          },
+          {
+            "label": "Step back",
+            "do": "move",
+            "arg": "back_step"
+          }
+        ]
+      },
+      {
+        "name": "Power struggle",
+        "entries": [
+          {
+            "label": "Clash - player wins",
+            "do": "pair",
+            "arg": "clash",
+            "win": true,
+            "note": "The struggle, then his win: -300 HP"
+          },
+          {
+            "label": "Clash - player loses",
+            "do": "pair",
+            "arg": "clash",
+            "win": false,
+            "note": "Her win: the fan slash"
+          },
+          {
+            "label": "Clash - play it yourself",
+            "do": "pair",
+            "arg": "clash",
+            "note": "F2, then tap A / D and swing"
+          }
+        ]
+      },
+      {
+        "name": "Finishers",
+        "entries": [
+          {
+            "label": "Finisher",
+            "do": "pair",
+            "arg": "finisher",
+            "note": "His finisher on her, through to her death"
+          },
+          {
+            "label": "Execution (player's last life)",
+            "do": "execution",
+            "arg": "",
+            "note": "She wins the clash; the fan takes his head"
+          }
+        ]
+      },
+      {
+        "name": "Player",
+        "entries": [
+          {
+            "label": "Player: punch",
+            "do": "input",
+            "arg": "punch"
+          },
+          {
+            "label": "Player: swing",
+            "do": "input",
+            "arg": "swing"
+          },
+          {
+            "label": "Player: grab",
+            "do": "input",
+            "arg": "grab"
+          },
+          {
+            "label": "Player: taunt",
+            "do": "input",
+            "arg": "taunt"
+          },
+          {
+            "label": "Reset",
+            "do": "reset",
+            "arg": ""
+          }
+        ]
+      }
+    ],
+    "clip_groups": [
+      {
+        "name": "idle, moves",
+        "prefixes": [
+          "em0440_00"
+        ]
+      },
+      {
+        "name": "attacks",
+        "prefixes": [
+          "em0440_01"
+        ]
+      },
+      {
+        "name": "hurt, death",
+        "prefixes": [
+          "em0440_10"
+        ]
+      }
+    ]
+  },
+  "names": {
+    "clips": {
+      "em0440_0000.mot": "Fighting stance (idle)",
+      "em0440_0001.mot": "Drop a bomb",
+      "em0440_0002.mot": "Taunt (also gloats over dead Jack)",
+      "em0440_0003.mot": "Guard: block",
+      "em0440_0004.mot": "Guard: hold and recover",
+      "em0440_0010.mot": "Run",
+      "em0440_0020.mot": "Scaffold jump: take-off",
+      "em0440_0021.mot": "Scaffold jump: in the air",
+      "em0440_0022.mot": "Land (scaffold jump / after shock)",
+      "em0440_0023.mot": "Jump crouch (scaffold hop start)",
+      "em0440_0024.mot": "Land from a hop or step",
+      "em0440_0025.mot": "Step / hop to the right",
+      "em0440_0026.mot": "Step / hop to the left",
+      "em0440_0027.mot": "Hop forward (scaffold to scaffold)",
+      "em0440_0028.mot": "Back step",
+      "em0440_0029.mot": "Front step [unused]",
+      "em0440_002a.mot": "Kamikaze: leap off the scaffold",
+      "em0440_002b.mot": "Kamikaze: impact",
+      "em0440_002d.mot": "Kamikaze: recover",
+      "em0440_0100.mot": "Backfist (uraken)",
+      "em0440_0101.mot": "Shoulder ram (tetuzankou)",
+      "em0440_0102.mot": "Fan throw: wind-up",
+      "em0440_0103.mot": "Fan throw: fans in flight",
+      "em0440_0104.mot": "Fan throw: catch the fans",
+      "em0440_0105.mot": "Giant slalom (spinning fan dance)",
+      "em0440_0110.mot": "Clash: start",
+      "em0440_0111.mot": "Clash: struggle loop",
+      "em0440_0112.mot": "Clash lost: Jack's blow",
+      "em0440_0113.mot": "Clash won: she cuts Jack",
+      "em0440_0121.mot": "Finisher: caught",
+      "em0440_0122.mot": "Finisher: struggle loop",
+      "em0440_0123.mot": "Finisher: meter layer (blend)",
+      "em0440_0124.mot": "Finisher: the kill begins",
+      "em0440_0125.mot": "Finisher: the kill",
+      "em0440_1000.mot": "Hurt from the right",
+      "em0440_1001.mot": "Hurt from the left",
+      "em0440_1002.mot": "Hurt in the body",
+      "em0440_1003.mot": "Knocked down",
+      "em0440_1004.mot": "Get up after knockdown",
+      "em0440_1006.mot": "Hit while down",
+      "em0440_1007.mot": "Finish-ready stagger and collapse",
+      "em0440_1010.mot": "Electric shock (ring fence)",
+      "em0110_1032.mot": "Grunt clip 1032, falls back [unused]",
+      "em0110_1036.mot": "Grunt clip 1036, hit and fall [unused]",
+      "em0110_1510.mot": "Bad smell reaction [unused]",
+      "em0110_1050.mot": "Giant swing: lifted",
+      "em0110_1051.mot": "Giant swing: spin loop",
+      "em0110_1052.mot": "Giant swing: thrown",
+      "em0110_1053.mot": "Giant swing: release [unused]",
+      "pl0030_04aa.mot": "Jack: clash start",
+      "pl0030_04ab.mot": "Jack: clash struggle loop",
+      "pl0030_04ac.mot": "Jack: clash won, his blow",
+      "pl0030_04ad.mot": "Jack: clash lost, cut down",
+      "pl0030_1305.mot": "Jack: finisher, the catch",
+      "pl0030_1306.mot": "Jack: finisher struggle loop",
+      "pl0030_1307.mot": "Jack: finisher clip 1307 [role unconfirmed]",
+      "pl0030_1308.mot": "Jack: finisher, the kill",
+      "wp0600_04aa.mot": "Chainsaw: clash start",
+      "wp0600_04ab.mot": "Chainsaw: clash struggle loop",
+      "wp0600_04ac.mot": "Chainsaw: clash won, his blow",
+      "wp0600_04ad.mot": "Chainsaw: clash lost",
+      "pl0030_c4aa.mot": "Camera: clash start",
+      "pl0030_c4ab.mot": "Camera: clash struggle orbit",
+      "pl0030_c4ac.mot": "Camera: clash, Jack's blow",
+      "pl0030_c4ad.mot": "Camera: clash, she cuts Jack",
+      "pl0030_c305.mot": "Camera: finisher catch",
+      "pl0030_c306.mot": "Camera: finisher struggle",
+      "pl0030_c307.mot": "Camera: finisher 42-frame take [unused]",
+      "pl0030_c308.mot": "Camera: the kill begins",
+      "pl0030_c309.mot": "Camera: the kill [unused]"
+    },
+    "voices": {
+      "83": {
+        "name": "Commentary: her attack",
+        "trigger": "She starts a backfist, shoulder ram or giant slalom"
+      },
+      "84": {
+        "name": "Commentary: fan throw",
+        "trigger": "She flings her fans"
+      },
+      "85": {
+        "name": "Commentary: kamikaze dive",
+        "trigger": "She leaps off a scaffold at Jack (scaffold not in the editor)"
+      },
+      "86": {
+        "name": "Commentary: Jack wins the clash",
+        "trigger": "Jack wins the clash and strikes her (0112)"
+      },
+      "87": {
+        "name": "Commentary: she wins the clash",
+        "trigger": "She wins the clash and cuts Jack (0113)"
+      },
+      "88": {
+        "name": "Commentary: she is hurt",
+        "trigger": "She takes damage (onPreMove, after her HP is written)"
+      },
+      "89": {
+        "name": "Commentary: finish-ready",
+        "trigger": "She staggers, ready for the finisher (1007)"
+      },
+      "91": {
+        "name": "Clash start (empty slot)",
+        "trigger": "The clash begins; her room's pack has no recording for it"
+      },
+      "4106": {
+        "name": "Giant swing spin",
+        "trigger": "Announcer, every spin frame while Jack giant-swings her"
+      },
+      "4107": {
+        "name": "Giant swing throw",
+        "trigger": "Announcer, Jack lets go of the giant swing"
+      },
+      "4120": {
+        "name": "Jack low HP",
+        "trigger": "Announcer, while Jack's HP is under 30% (with cooldown)"
+      },
+      "4375": {
+        "name": "Jack idle fidget",
+        "trigger": "Announcer, Jack's idle fidget"
+      },
+      "4420": {
+        "name": "Jack's death",
+        "trigger": "Announcer, Jack is killed"
+      },
+      "90": {
+        "name": "Commentary 0x5A",
+        "trigger": "In her room's pack, but no RinRin code asks for it (other enemies' modules do)"
+      }
+    },
+    "cameras": {
+      "pl0030_c4aa.mot": {
+        "name": "Clash start",
+        "actor": "em0440_0110.mot",
+        "player": "pl0030_04aa.mot",
+        "entry": "Power struggle/Clash - player wins"
+      },
+      "pl0030_c4ab.mot": {
+        "name": "Clash struggle: orbit around the pair",
+        "actor": "em0440_0111.mot",
+        "player": "pl0030_04ab.mot",
+        "entry": "Power struggle/Clash - player wins"
+      },
+      "pl0030_c4ac.mot": {
+        "name": "Clash won by Jack: his blow",
+        "actor": "em0440_0112.mot",
+        "player": "pl0030_04ac.mot",
+        "entry": "Power struggle/Clash - player wins"
+      },
+      "pl0030_c4ad.mot": {
+        "name": "Clash lost by Jack: she cuts him down",
+        "actor": "em0440_0113.mot",
+        "player": "pl0030_04ad.mot",
+        "entry": "Power struggle/Clash - player loses"
+      },
+      "pl0030_c305.mot": {
+        "name": "Finisher: Jack catches her",
+        "actor": "em0440_0121.mot",
+        "player": "pl0030_1305.mot",
+        "entry": "Finishers/Finisher"
+      },
+      "pl0030_c306.mot": {
+        "name": "Finisher: the shake-meter struggle",
+        "actor": "em0440_0122.mot",
+        "player": "pl0030_1306.mot",
+        "entry": "Finishers/Finisher"
+      },
+      "pl0030_c307.mot": {
+        "name": "Finisher 42-frame take [unused]",
+        "actor": "em0440_0123.mot",
+        "player": "pl0030_1307.mot",
+        "entry": "Finishers/Finisher"
+      },
+      "pl0030_c308.mot": {
+        "name": "Finisher: the kill begins",
+        "actor": "em0440_0124.mot",
+        "player": "pl0030_1308.mot",
+        "entry": "Finishers/Finisher"
+      },
+      "pl0030_c309.mot": {
+        "name": "Finisher: the kill (native) [unused]",
+        "actor": "em0440_0125.mot",
+        "player": "pl0030_1308.mot",
+        "entry": "Finishers/Finisher"
+      }
+    },
+    "phases": {
+      "KEEN_COMPE": {
+        "0": "Clash start",
+        "1": "Clash start playing",
+        "2": "Struggle (shake meter)",
+        "10": "Jack wins: his blow",
+        "11": "His blow lands (damage)",
+        "12": "Back up or finish-ready",
+        "13": "Getting up",
+        "20": "Jack loses: she cuts him",
+        "21": "Cut playing out"
+      },
+      "FINISH": {
+        "0": "Caught",
+        "1": "Caught playing",
+        "2": "Struggle begins",
+        "3": "Struggle (shake meter)",
+        "10": "The kill begins",
+        "11": "Kill start playing",
+        "12": "The kill",
+        "13": "Kill playing out"
+      },
+      "EXECUTE": {
+        "0": "Starts toward fallen Jack",
+        "1": "Walking to Jack",
+        "2": "Clash start",
+        "3": "Holding the struggle",
+        "4": "She cuts him",
+        "5": "Cut done"
+      },
+      "state": {
+        "WAIT": "Waiting",
+        "RUN": "Running",
+        "URAKEN": "Backfist",
+        "TETUZANKOU": "Shoulder ram",
+        "RIGHT_STEP": "Step right",
+        "LEFT_STEP": "Step left",
+        "BACK_STEP": "Back step",
+        "THROW": "Fan throw",
+        "DM_EXPLOSION": "Knocked down",
+        "DM_RIGHT": "Hurt (right)",
+        "DM_LEFT": "Hurt (left)",
+        "DM_BODY": "Hurt (body)",
+        "PROVOCATION": "Taunt",
+        "FINISH_WAIT": "Finish-ready",
+        "SLALOM": "Giant slalom",
+        "GUARD": "Guard",
+        "PL_DEAD": "Jack is dead",
+        "FINISH": "Finisher",
+        "KEEN_COMPE": "Clash",
+        "EXECUTE": "Last-life execution",
+        "DM_DOWN": "Hit while down",
+        "DM_ELECTRIC": "Electric shock",
+        "DM_GIANTSWING": "Giant swing",
+        "EDITOR": "Editor clip"
+      }
+    }
+  }
+}

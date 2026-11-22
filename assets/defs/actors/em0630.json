@@ -1,0 +1,604 @@
+{
+  "id": "em0630",
+  "name": "Elise (c303 boss)",
+  "kind": "boss",
+  "models": [
+    "native/elise-source.glb",
+    "native/elise-color.glb"
+  ],
+  "motions": "native/elise-motion.json",
+  "hp": 1000,
+  "anims": {
+    "idle_ground": "em0630_0001.mot",
+    "idle_air": "em0630_0000.mot",
+    "walk": "em0630_0010.mot",
+    "wing_strike": "em0630_0111.mot",
+    "somersault": "em0630_0110.mot",
+    "volley_a": "em0630_0100.mot",
+    "volley_b": "em0630_0101.mot",
+    "dragon": "em0630_0102.mot",
+    "guard": "em0630_0020.mot",
+    "hurt_left": "em0630_1000.mot",
+    "hurt_right": "em0630_1001.mot"
+  },
+  "attacks": [],
+  "voices": {
+    "wing_strike": 157,
+    "bats_answer": 159,
+    "landing": 160,
+    "dragon_hint": 163,
+    "hurt_strong": 164,
+    "hurt_light": 165,
+    "clash_start": 167,
+    "clash_won": 168,
+    "bite": 169,
+    "victory": 171,
+    "clear": 4135,
+    "hide": 172
+  },
+  "tune": {
+    "csv0": 250,
+    "csv1": 100,
+    "csv2": 80,
+    "csv3": 5,
+    "csv4": 5,
+    "csv5": 1,
+    "csv6": 300,
+    "power0": 10,
+    "power1": 10,
+    "power2": 10,
+    "power3": 10,
+    "power4": 20,
+    "summon_zako": 3,
+    "summon_zako_per_hide": 1,
+    "summon_zako_max": 5,
+    "summon_bats_each": 6,
+    "summon_radius": 3.0,
+    "summon_center_x": 0.0,
+    "summon_center_z": 4.0,
+    "summon_frames": 110
+  },
+  "_notes": {
+    "csv": "em0630.csv: csv0 hide every N damage, csv1 bite heal, csv2 guard chip %, csv3 hint-bat interval s, csv4 heal start s, csv5 heal step s, csv6 clash-win damage",
+    "power": "boss attacks 1..5 (bosu kougeki): power0 / power1 the wing strike's two hits, power2 the somersault, power3 the guard-cancel somersault, power4 the Black Dragon",
+    "summon": "[added] each hide: summon_zako (+ summon_zako_per_hide per earlier hide, up to summon_zako_max) groups of summon_bats_each bats fly to points summon_radius m around (summon_center_x, summon_center_z), drop and become zako (em0101, play_street.rs) after summon_frames; summon_zako 0 turns it off",
+    "voices": "announcer voice ids by event (decimal): 157 = 0x9D ..."
+  },
+  "editor": {
+    "stage": "elise",
+    "spot": [
+      0,
+      0,
+      6
+    ],
+    "player_spot": [
+      0,
+      0,
+      9.5
+    ],
+    "focus": 1.3,
+    "cameras": [
+      "elise-camera.json"
+    ],
+    "groups": [
+      {
+        "name": "Attacks",
+        "entries": [
+          {
+            "label": "Wing strike",
+            "do": "move",
+            "arg": "attack",
+            "note": "Two wing hits; the lunge carries her in"
+          },
+          {
+            "label": "Somersault",
+            "do": "move",
+            "arg": "somersault",
+            "note": "A flip kick"
+          },
+          {
+            "label": "Bat volley A",
+            "do": "move",
+            "arg": "volley",
+            "note": "The swarm dives at him"
+          },
+          {
+            "label": "Bat volley B",
+            "do": "move",
+            "arg": "volley_b",
+            "note": "The second volley"
+          },
+          {
+            "label": "Black Dragon",
+            "do": "move",
+            "arg": "dragon",
+            "note": "One or two heads of bats chase him"
+          },
+          {
+            "label": "Guard",
+            "do": "move",
+            "arg": "guard",
+            "note": "Strike her while it is up"
+          }
+        ]
+      },
+      {
+        "name": "Hurt",
+        "entries": [
+          {
+            "label": "Light hit",
+            "do": "hurt",
+            "arg": "light"
+          },
+          {
+            "label": "Heavy hit",
+            "do": "hurt",
+            "arg": "heavy"
+          },
+          {
+            "label": "Hit from the front",
+            "do": "hurt",
+            "arg": "front"
+          },
+          {
+            "label": "Hit from behind",
+            "do": "hurt",
+            "arg": "back"
+          },
+          {
+            "label": "Hit from the left",
+            "do": "hurt",
+            "arg": "left"
+          },
+          {
+            "label": "Hit from the right",
+            "do": "hurt",
+            "arg": "right"
+          },
+          {
+            "label": "Pistol round",
+            "do": "hurt",
+            "arg": "shot",
+            "note": "Holes and blood; she keeps moving through it"
+          },
+          {
+            "label": "Knocked down",
+            "do": "hurt",
+            "arg": "down",
+            "note": "She falls, then gets up"
+          }
+        ]
+      },
+      {
+        "name": "Death",
+        "entries": [
+          {
+            "label": "Killed",
+            "do": "kill",
+            "arg": "",
+            "note": "Her death, then finish-ready"
+          },
+          {
+            "label": "Finish-ready (strike her)",
+            "do": "pair",
+            "arg": "finisher",
+            "note": "F2 gives you the keys to strike her"
+          }
+        ]
+      },
+      {
+        "name": "Movement",
+        "entries": [
+          {
+            "label": "Take off",
+            "do": "move",
+            "arg": "takeoff"
+          },
+          {
+            "label": "Land",
+            "do": "move",
+            "arg": "land"
+          },
+          {
+            "label": "Hover",
+            "do": "move",
+            "arg": "hover"
+          },
+          {
+            "label": "Hide in a crypt",
+            "do": "move",
+            "arg": "hide",
+            "note": "Also drops the bat-born zako"
+          },
+          {
+            "label": "Summon zako",
+            "do": "move",
+            "arg": "summon"
+          }
+        ]
+      },
+      {
+        "name": "Taunts",
+        "entries": [
+          {
+            "label": "Laugh",
+            "do": "move",
+            "arg": "laugh",
+            "note": "With her victory line"
+          }
+        ]
+      },
+      {
+        "name": "Power struggle",
+        "entries": [
+          {
+            "label": "Clash - player wins",
+            "do": "pair",
+            "arg": "clash",
+            "win": true,
+            "note": "Pulled out of her coffin, the struggle, the swings, her loss (-300 HP)"
+          },
+          {
+            "label": "Clash - player loses (bite)",
+            "do": "pair",
+            "arg": "clash",
+            "win": false,
+            "note": "She bites him: the drain, the fang marks, his blood on her mouth"
+          },
+          {
+            "label": "Clash - play it yourself",
+            "do": "pair",
+            "arg": "clash",
+            "note": "F2, then tap A / D and swing F / Q"
+          }
+        ]
+      },
+      {
+        "name": "Finishers",
+        "entries": [
+          {
+            "label": "Finisher (player wins)",
+            "do": "pair",
+            "arg": "finisher",
+            "win": true,
+            "note": "The finishing blow on her"
+          },
+          {
+            "label": "Execution (player's last life)",
+            "do": "execution",
+            "arg": "",
+            "note": "She wins the clash and bites his head off"
+          }
+        ]
+      },
+      {
+        "name": "Player",
+        "entries": [
+          {
+            "label": "Player: punch",
+            "do": "input",
+            "arg": "punch"
+          },
+          {
+            "label": "Player: swing",
+            "do": "input",
+            "arg": "swing"
+          },
+          {
+            "label": "Player: grab",
+            "do": "input",
+            "arg": "grab"
+          },
+          {
+            "label": "Player: taunt",
+            "do": "input",
+            "arg": "taunt"
+          },
+          {
+            "label": "Reset",
+            "do": "reset",
+            "arg": ""
+          }
+        ]
+      }
+    ],
+    "clip_groups": [
+      {
+        "name": "idle, flight, hide",
+        "prefixes": [
+          "em0630_00"
+        ]
+      },
+      {
+        "name": "attacks",
+        "prefixes": [
+          "em0630_01"
+        ]
+      },
+      {
+        "name": "clash",
+        "prefixes": [
+          "em0630_02"
+        ]
+      },
+      {
+        "name": "hurt, death",
+        "prefixes": [
+          "em0630_10",
+          "em0440_10"
+        ]
+      }
+    ],
+    "camera_anchor": "player"
+  },
+  "names": {
+    "clips": {
+      "em0630_0000.mot": "Hover in the air (flying idle)",
+      "em0630_0001.mot": "Stand (grounded idle)",
+      "em0630_0002.mot": "Land / drop into the crypt",
+      "em0630_0003.mot": "Take off into the air",
+      "em0630_0010.mot": "Walk",
+      "em0630_000a.mot": "Hiding pose: apse or wall crypt",
+      "em0630_000b.mot": "Hiding pose in a coffin (A)",
+      "em0630_000c.mot": "Hiding pose in a coffin (B)",
+      "em0630_000e.mot": "Hiding pose in a coffin (C)",
+      "em0630_0011.mot": "Fly forward",
+      "em0630_0012.mot": "Fly sideways (one side)",
+      "em0630_0013.mot": "Fly sideways (other side)",
+      "em0630_0014.mot": "Fly backward",
+      "em0630_0020.mot": "Guard",
+      "em0630_0100.mot": "Bat volley A (bats dive at Jack)",
+      "em0630_0101.mot": "Bat volley B (bats dive at Jack)",
+      "em0630_0102.mot": "Black Dragon: summon",
+      "em0630_0103.mot": "Black Dragon: steering loop",
+      "em0630_0104.mot": "Laugh (victory)",
+      "em0630_0105.mot": "Black Dragon: recall the bats",
+      "em0630_0110.mot": "Somersault kick",
+      "em0630_0111.mot": "Wing strike (two hits)",
+      "em0630_0200.mot": "Clash: start",
+      "em0630_0201.mot": "Clash: struggle loop",
+      "em0630_0202.mot": "Clash: struggle lean (blend layer)",
+      "em0630_0203.mot": "Clash won: Jack strikes her",
+      "em0630_0204.mot": "Clash lost: the bite",
+      "em0630_0205.mot": "Clash: meter full, swing prompts",
+      "em0630_0206.mot": "Pulled out of the coffin",
+      "em0630_1000.mot": "Hurt from the side (A)",
+      "em0630_1001.mot": "Hurt from the side (B)",
+      "em0630_1002.mot": "Hurt from front or back",
+      "em0440_1003.mot": "Knocked down (RinRin's clip)",
+      "em0630_1004.mot": "Get up after knockdown",
+      "em0440_1005.mot": "RinRin's 20-frame clip 1005 [unused]",
+      "em0630_1005.mot": "Death",
+      "em0630_1006.mot": "Finish-ready daze loop",
+      "pl0030_0460.mot": "Jack: clash start",
+      "pl0030_0461.mot": "Jack: clash struggle loop",
+      "pl0030_0462.mot": "Jack: struggle lean (blend layer)",
+      "pl0030_0463.mot": "Jack: clash won, strikes her",
+      "pl0030_0464.mot": "Jack: bitten and drained",
+      "pl0030_0465.mot": "Jack: meter full, swing prompts",
+      "pl0030_0466.mot": "Jack: pulls her out of the coffin",
+      "pl0030_c460.mot": "Camera: clash start",
+      "pl0030_c461.mot": "Camera: clash struggle",
+      "pl0030_c462.mot": "Camera: struggle lean",
+      "pl0030_c463.mot": "Camera: clash won",
+      "pl0030_c467.mot": "Camera: clash won, alternate [unused]",
+      "pl0030_c464.mot": "Camera: the bite",
+      "pl0030_c465.mot": "Camera: meter full, swing prompts",
+      "pl0030_c466.mot": "Camera: pulled out of the coffin",
+      "wp0600_0460.mot": "Chainsaw: clash start",
+      "wp0600_0461.mot": "Chainsaw: clash struggle",
+      "wp0600_0462.mot": "Chainsaw: struggle lean",
+      "wp0600_0463.mot": "Chainsaw: clash won strike",
+      "wp0600_0465.mot": "Chainsaw: meter full",
+      "wp0600_0466.mot": "Chainsaw: coffin pull-out"
+    },
+    "voices": {
+      "156": {
+        "name": "Torch put out",
+        "trigger": "Native: Jack drops a burning torch (arm type 7); burning is not ported, never plays"
+      },
+      "157": {
+        "name": "Wing strike taunt",
+        "trigger": "She starts her wing strike on the ground"
+      },
+      "158": {
+        "name": "Unused line 0x9E",
+        "trigger": "Recorded in c303's pack; no code in the game asks for it"
+      },
+      "159": {
+        "name": "Bats' answer",
+        "trigger": "Her bat volley launches (0100 frame 40 / 0101 frame 35)"
+      },
+      "160": {
+        "name": "Landing",
+        "trigger": "She lands from flight (landing clip frame 40; the bats re-summon)"
+      },
+      "161": {
+        "name": "Unused line 0xA1",
+        "trigger": "Recorded in c303's pack; no code in the game asks for it"
+      },
+      "162": {
+        "name": "A pew breaks",
+        "trigger": "The church room plays it the first time each breakable bl005c object breaks (once per object); the port has no breakable pews yet"
+      },
+      "163": {
+        "name": "Black Dragon dodge hint",
+        "trigger": "A Black Dragon head of bats comes within 3.75 m of Jack"
+      },
+      "164": {
+        "name": "Hurt (strong)",
+        "trigger": "She is hit hard (20+ damage; natively ATHIT types 0x2A-0x36)"
+      },
+      "165": {
+        "name": "Hurt (light)",
+        "trigger": "She is hit for under 20 damage"
+      },
+      "166": {
+        "name": "Unused line 0xA6",
+        "trigger": "Recorded in c303's pack; no code asks for it (her hurt picks only 0xA4 / 0xA5)"
+      },
+      "167": {
+        "name": "Clash start",
+        "trigger": "Jack has pulled her out of the coffin and the clash begins"
+      },
+      "168": {
+        "name": "Clash lost (Jack wins)",
+        "trigger": "Jack lands all the swing prompts and strikes her"
+      },
+      "169": {
+        "name": "The bite",
+        "trigger": "The clash meter empties or a swing is missed: she bites Jack"
+      },
+      "170": {
+        "name": "Unused line 0xAA",
+        "trigger": "Recorded in c303's pack; no code asks for it (the clash asks only 0xA7 / 0xA8 / 0xA9)"
+      },
+      "171": {
+        "name": "Victory laugh",
+        "trigger": "Jack dies, or her last-life execution ends; she laughs"
+      },
+      "172": {
+        "name": "Settling into the coffin (no take)",
+        "trigger": "She settles into her hide coffin (em0630_r1_hide); c303's pack has no recording for it"
+      },
+      "4106": {
+        "name": "Giant swing spin (silent)",
+        "trigger": "Jack's giant swing spin; the c303 pack has no clips, so nothing plays"
+      },
+      "4107": {
+        "name": "Giant swing throw (silent)",
+        "trigger": "Jack's giant swing throw; the c303 pack has no clips, so nothing plays"
+      },
+      "4120": {
+        "name": "Jack low HP",
+        "trigger": "Announcer, while Jack's HP is under 30% (with cooldown)"
+      },
+      "4135": {
+        "name": "Stage clear",
+        "trigger": "Announcer, after her death outro (ev34) has ended"
+      },
+      "4375": {
+        "name": "Jack idle fidget (silent)",
+        "trigger": "Jack's idle fidget; the c303 pack has no clips, so nothing plays"
+      },
+      "4420": {
+        "name": "Jack's death",
+        "trigger": "Announcer, Jack is killed"
+      }
+    },
+    "cameras": {
+      "pl0030_c460.mot": {
+        "name": "Clash start",
+        "actor": "em0630_0200.mot",
+        "player": "pl0030_0460.mot",
+        "entry": "Power struggle/Clash - player wins"
+      },
+      "pl0030_c461.mot": {
+        "name": "Clash struggle (shake meter)",
+        "actor": "em0630_0201.mot",
+        "player": "pl0030_0461.mot",
+        "entry": "Power struggle/Clash - player wins"
+      },
+      "pl0030_c462.mot": {
+        "name": "Struggle lean (blends into c461)",
+        "actor": "em0630_0202.mot",
+        "player": "pl0030_0462.mot",
+        "entry": "Power struggle/Clash - player wins"
+      },
+      "pl0030_c463.mot": {
+        "name": "Clash won: Jack strikes her",
+        "actor": "em0630_0203.mot",
+        "player": "pl0030_0463.mot",
+        "entry": "Power struggle/Clash - player wins"
+      },
+      "pl0030_c467.mot": {
+        "name": "Clash won, alternate angle [unused]",
+        "actor": "em0630_0203.mot",
+        "player": "pl0030_0463.mot",
+        "entry": "Power struggle/Clash - player wins"
+      },
+      "pl0030_c464.mot": {
+        "name": "Clash lost: the bite",
+        "actor": "em0630_0204.mot",
+        "player": "pl0030_0464.mot",
+        "entry": "Power struggle/Clash - player loses (bite)"
+      },
+      "pl0030_c465.mot": {
+        "name": "Meter full: the swing prompts",
+        "actor": "em0630_0205.mot",
+        "player": "pl0030_0465.mot",
+        "entry": "Power struggle/Clash - player wins"
+      },
+      "pl0030_c466.mot": {
+        "name": "Jack pulls her out of the coffin",
+        "actor": "em0630_0206.mot",
+        "player": "pl0030_0466.mot",
+        "entry": "Power struggle/Clash - player wins"
+      }
+    },
+    "phases": {
+      "Keen": {
+        "0": "Pulled out of the coffin",
+        "1": "Clash start",
+        "2": "Struggle (shake meter)",
+        "3": "Meter full: swing prompts",
+        "4": "Won: Jack strikes her",
+        "6": "Lost: the bite",
+        "20": "Last-life execution: the hold"
+      },
+      "Hide": {
+        "0": "Dropping into the crypt",
+        "5": "Hiding in the crypt (heals)"
+      },
+      "Dragon": {
+        "0": "Summoning",
+        "1": "Heads chase Jack",
+        "2": "Recalling the bats"
+      },
+      "Air": {
+        "0": "Take-off / landing",
+        "1": "Landed (bats re-summoned)"
+      },
+      "Somersault": {
+        "0": "Somersault kick",
+        "1": "Guard-cancel somersault"
+      },
+      "Volley": {
+        "0": "Wind-up",
+        "1": "Bats launched"
+      },
+      "Victory": {
+        "0": "Laugh",
+        "1": "Take off",
+        "2": "Circle over Jack",
+        "3": "Laugh in the air",
+        "5": "Jack continued: back to the fight"
+      },
+      "Finisher": {
+        "0": "Struck by the finisher",
+        "1": "Death outro (ev34)",
+        "2": "Clear line, room clear"
+      },
+      "state": {
+        "Start": "Waiting on the floor",
+        "Idle": "Idle",
+        "Air": "Taking off / landing",
+        "Move": "Moving",
+        "Attack": "Wing strike",
+        "Somersault": "Somersault",
+        "Volley": "Bat volley",
+        "Dragon": "Black Dragon",
+        "Guard": "Guarding",
+        "Damage": "Hurt",
+        "Down": "Knocked down",
+        "Hide": "Hiding in a crypt",
+        "Keen": "Clash",
+        "Dead": "Dying",
+        "FinishWait": "Finish-ready",
+        "Finisher": "Finished off",
+        "Victory": "Victory taunt",
+        "Editor": "Editor clip"
+      }
+    }
+  }
+}

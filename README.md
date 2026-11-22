@@ -4,8 +4,16 @@ A native PC reconstruction of **MadWorld** (Wii, disc RZZE8P rev 0), written in 
 It replaces the emulated Wii hardware with SDK-level high-level emulation (HLE) and reimplements game logic in Rust.
 It started from the RinRin boss fight and grew into a multi-stage game with optional VR.
 
-> **No game data is in this repository.** Everything under `assets/`, `extracted/`, `staged/` and the research
-> dumps comes from your own disc through the staging tools in `tools/`. The repository holds code, tools and notes only.
+> **No original game data is in this repository.** Everything under `assets/native/`, `extracted/`, `staged/` and the
+> research dumps comes from your own disc through the staging tools in `tools/`. The only committed assets are the
+> owner's own: **Kreese Kreely** (`assets/characters/kreely`, `assets/native/kreely-*`, `assets/native/audio/kreely`)
+> and the port's actor definitions (`assets/defs`).
+
+**Start here:**
+- **[SETUP.md](SETUP.md)**: from your disc to a playable `mw-play`. Covers disc extraction, the explorer export, every staging step, then build and run.
+- **[recomp/README.md](recomp/README.md)**: the recompiled original core (`madworld-native`). Covers the upstream version
+  ([JaredMoss1996/MadWorldDecomp](https://github.com/JaredMoss1996/MadWorldDecomp) @ `6e02a76`), our overlay of
+  changes, and the MSVC build.
 
 Status: work in progress. It plays, but full fidelity, the HUD, menus and save flow are still being ported
 (see `research/NATIVE-PORT-GAPS.md`).
@@ -46,6 +54,9 @@ VR design notes are in [notes/VR.md](notes/VR.md).
 | `crates/mw-game` | Bevy game: `mw-play` (the port), `madworld-native` (recomp host), previews; `play_*.rs` gameplay modules |
 | `crates/vendor` | Vendored crates (bevy_mod_openxr/xr ported to Bevy 0.20, openxr, …) |
 | `native-platform` | HLE platform layer for the recompiled core (GX render, AX/DSP audio, input) |
+| `recomp/` | Our changes to the upstream recompiled core (`overlay/`, `upstream-modified.patch`) and its build guide |
+| `explorer/` | The MadWorld explorer builder (disc decoder, GLB exporter, viewer) that the staging tools read from |
+| `assets/characters/kreely`, `assets/native/kreely-*` | Kreese Kreely: source model, build, rig, moves, voice bank |
 | `tools/` | Extraction, staging, indexing, comparison, VR test runtime (`tools/vr/xrsim`), Ghidra scripts |
 | `research/*.md` | Reverse-engineering write-ups per subsystem (boss behavior, audio, collision, events, UI, controls) |
 | `notes/` | VR notes, ledger report, mod log |
@@ -137,10 +148,11 @@ Desktop simulator keys: see `notes/VR.md`.
 
 ## Building and running
 
-Requirements: Rust (stable), Windows with DX12 or Vulkan, Python 3 for staging, your own extracted disc.
+Requirements: Rust (stable), Windows with DX12 or Vulkan, Python 3 and Node for staging, your own extracted disc.
+Follow **[SETUP.md](SETUP.md)** to stage the game files first.
 
 ```powershell
-# stage assets from your extraction first (see docs/WORKLOG.md for each tool), then:
+# after staging:
 cargo run --release -p mw-game --bin mw-play
 ```
 
@@ -155,7 +167,7 @@ $env:MW_STAGE="elise"; cargo run --release -p mw-game --bin mw-play
 ```
 
 ```powershell
-# recompiled-core reference frontend (needs the locally built madworld_core.dll)
+# recompiled-core reference frontend (build madworld_core.dll first: recomp/README.md)
 cargo build --locked -p mw-game --features native-runtime --bin madworld-native
 ```
 

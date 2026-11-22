@@ -1,0 +1,742 @@
+{
+  "id": "em0623",
+  "name": "The Black Baron (c503 boss)",
+  "kind": "boss",
+  "models": [
+    "native/baron-source.glb",
+    "native/baron-color.glb"
+  ],
+  "motions": "native/baron-motion.json",
+  "hp": 2000,
+  "voices": {
+    "mach_punch": 270,
+    "guard": 274,
+    "hurt_heavy": 275,
+    "hurt_light": 276,
+    "clash_lost": 280,
+    "threat": 283,
+    "bat_combo": 287
+  },
+  "_notes": {
+    "module": "play_baron.rs (ed_cmd)",
+    "voices": "c503's announcer lines; the names are where play_baron.rs pushes them"
+  },
+  "editor": {
+    "stage": "baron",
+    "focus": 1.2,
+    "cameras": [
+      "baron-camera.json",
+      "oiran-camera.json"
+    ],
+    "groups": [
+      {
+        "name": "Attacks",
+        "entries": [
+          {
+            "label": "Combo",
+            "do": "move",
+            "arg": "combo"
+          },
+          {
+            "label": "Mach punch",
+            "do": "move",
+            "arg": "mach"
+          },
+          {
+            "label": "Screw drop kick",
+            "do": "move",
+            "arg": "dropkick"
+          },
+          {
+            "label": "Shoryuken",
+            "do": "move",
+            "arg": "shoryuken"
+          },
+          {
+            "label": "Anti-air",
+            "do": "move",
+            "arg": "antiair"
+          },
+          {
+            "label": "BH upper",
+            "do": "move",
+            "arg": "bhupper"
+          },
+          {
+            "label": "God hand",
+            "do": "move",
+            "arg": "godhand",
+            "note": "Pulls the player in"
+          },
+          {
+            "label": "Dempsey roll",
+            "do": "move",
+            "arg": "dempsey"
+          },
+          {
+            "label": "Rider kick",
+            "do": "move",
+            "arg": "riderkick",
+            "note": "With its own camera"
+          },
+          {
+            "label": "Angry turn",
+            "do": "move",
+            "arg": "angry",
+            "note": "His phase-2 turn, with its camera and music"
+          }
+        ]
+      },
+      {
+        "name": "Hurt",
+        "entries": [
+          {
+            "label": "Light hit",
+            "do": "hurt",
+            "arg": "light"
+          },
+          {
+            "label": "Heavy hit",
+            "do": "hurt",
+            "arg": "heavy"
+          },
+          {
+            "label": "Hit from behind",
+            "do": "hurt",
+            "arg": "back"
+          },
+          {
+            "label": "Hit from the left",
+            "do": "hurt",
+            "arg": "left"
+          },
+          {
+            "label": "Hit from the right",
+            "do": "hurt",
+            "arg": "right"
+          },
+          {
+            "label": "Pistol round",
+            "do": "hurt",
+            "arg": "shot"
+          }
+        ]
+      },
+      {
+        "name": "Death",
+        "entries": [
+          {
+            "label": "Down to the dizzy wait",
+            "do": "kill",
+            "arg": "",
+            "note": "Finish-ready"
+          }
+        ]
+      },
+      {
+        "name": "Taunts",
+        "entries": [
+          {
+            "label": "Threat",
+            "do": "move",
+            "arg": "threat"
+          }
+        ]
+      },
+      {
+        "name": "Defence",
+        "entries": [
+          {
+            "label": "Guard",
+            "do": "move",
+            "arg": "guard"
+          },
+          {
+            "label": "Avoid",
+            "do": "move",
+            "arg": "avoid"
+          }
+        ]
+      },
+      {
+        "name": "Power struggle",
+        "entries": [
+          {
+            "label": "Clash - player wins the exchanges",
+            "do": "pair",
+            "arg": "clash",
+            "win": true,
+            "note": "The grab, four exchanges, the -400 HP blow"
+          },
+          {
+            "label": "Clash - player loses",
+            "do": "pair",
+            "arg": "clash",
+            "win": false,
+            "note": "He wins the exchange: the hat and glasses back on"
+          },
+          {
+            "label": "Clash - play it yourself",
+            "do": "pair",
+            "arg": "clash",
+            "note": "F2, then swing F / Q"
+          },
+          {
+            "label": "Finale - player wins",
+            "do": "pair",
+            "arg": "finale",
+            "win": true,
+            "note": "The exchanges, the meter, thrown skyward, the helicopter"
+          }
+        ]
+      },
+      {
+        "name": "Grabs",
+        "entries": [
+          {
+            "label": "Shoryuken into Mathilda's bat",
+            "do": "pair",
+            "arg": "bat",
+            "note": "His uppercut sends you to her bat combo"
+          }
+        ]
+      },
+      {
+        "name": "Finishers",
+        "entries": [
+          {
+            "label": "Finishing blow",
+            "do": "pair",
+            "arg": "finisher",
+            "win": true,
+            "note": "The blow on his dizzy wait"
+          },
+          {
+            "label": "Execution (player's last life)",
+            "do": "execution",
+            "arg": "",
+            "note": "He wins the exchange over the fallen player"
+          }
+        ]
+      },
+      {
+        "name": "Ringside",
+        "entries": [
+          {
+            "label": "Oiran item toss",
+            "do": "move",
+            "arg": "toss",
+            "note": "An oiran throws the player a recovery item"
+          }
+        ]
+      },
+      {
+        "name": "Player",
+        "entries": [
+          {
+            "label": "Player: punch",
+            "do": "input",
+            "arg": "punch"
+          },
+          {
+            "label": "Player: swing",
+            "do": "input",
+            "arg": "swing"
+          },
+          {
+            "label": "Player: grab",
+            "do": "input",
+            "arg": "grab"
+          },
+          {
+            "label": "Player: taunt",
+            "do": "input",
+            "arg": "taunt"
+          },
+          {
+            "label": "Reset",
+            "do": "reset",
+            "arg": ""
+          }
+        ]
+      }
+    ],
+    "clip_groups": [
+      {
+        "name": "idle, moves",
+        "prefixes": [
+          "em0623_00"
+        ]
+      },
+      {
+        "name": "attacks",
+        "prefixes": [
+          "em0623_01",
+          "em0623_02"
+        ]
+      },
+      {
+        "name": "clash",
+        "prefixes": [
+          "em0623_03"
+        ]
+      },
+      {
+        "name": "hurt",
+        "prefixes": [
+          "em0110_"
+        ]
+      }
+    ]
+  },
+  "names": {
+    "clips": {
+      "em0623_0000.mot": "Idle stance, open hands",
+      "em0623_0001.mot": "Taunt 1 (provocation)",
+      "em0623_0002.mot": "Laugh over the fallen player",
+      "em0623_0003.mot": "Taunt 3 (native grab lead-in)",
+      "em0623_000c.mot": "Angry turn (phase 2 starts)",
+      "em0623_000a.mot": "Going dizzy",
+      "em0623_000b.mot": "Dizzy loop / finish-ready wait",
+      "em0623_0011.mot": "Step forward (combo step-in)",
+      "em0623_0012.mot": "Step back (dodge)",
+      "em0623_0013.mot": "Step right [unused]",
+      "em0623_0014.mot": "Step left (side dodge)",
+      "em0623_0015.mot": "Dodge 1",
+      "em0623_0016.mot": "Dodge 2",
+      "em0623_0017.mot": "Dodge 3",
+      "em0623_0018.mot": "Big-attack wind-up (grab)",
+      "em0623_0120.mot": "Guard-family pose 0120 [unused]",
+      "em0623_0121.mot": "Guard",
+      "em0623_0100.mot": "Combo punch 1",
+      "em0623_0101.mot": "Combo punch 2",
+      "em0623_0102.mot": "Combo punch 3",
+      "em0623_0103.mot": "Combo punch 4",
+      "em0623_0104.mot": "Combo punch 5",
+      "em0623_0105.mot": "Combo punch 6",
+      "em0623_0106.mot": "Mach punch flurry",
+      "em0623_0107.mot": "Shoryuken / anti-air uppercut",
+      "em0623_0108.mot": "God Hand (pulls the player in)",
+      "em0623_010a.mot": "BH upper A",
+      "em0623_010b.mot": "BH upper B",
+      "em0623_010c.mot": "BH upper, long (170 f) [unused]",
+      "em0623_0110.mot": "Dempsey roll (guard counter)",
+      "em0623_0200.mot": "Combo strike 7 (0200)",
+      "em0623_0202.mot": "Screw drop kick",
+      "em0623_0203.mot": "Rider (lightning) kick",
+      "em0623_0300.mot": "Clash grab lunge",
+      "em0623_0301.mot": "Clash: grab connects",
+      "em0623_0302.mot": "Clash swing 1: hat knocked off",
+      "em0623_0303.mot": "Clash swing 2: sunglasses off",
+      "em0623_0304.mot": "Clash swing 3",
+      "em0623_030d.mot": "Clash swing 4",
+      "em0623_0305.mot": "Clash: final swing taken",
+      "em0623_0306.mot": "Clash won: the -400 HP blow",
+      "em0623_0307.mot": "Clash lost: he wins the exchange",
+      "em0623_0308.mot": "Finale blow 1",
+      "em0623_0309.mot": "Finale blow 2 / meter hold",
+      "em0623_030a.mot": "Finale: slow-motion blow",
+      "em0623_030b.mot": "Finale: knocked to 1 HP",
+      "em0623_030c.mot": "Finale: the helicopter",
+      "em0110_10a5.mot": "Hurt, light A (grunt reaction)",
+      "em0110_10a7.mot": "Hurt, light B (grunt reaction)",
+      "em0110_10a8.mot": "Hurt, heavy (also defeated pose)",
+      "em0623_c000.mot": "Camera: finale 1 HP blow [unused]",
+      "em0623_c001.mot": "Camera: helicopter finale [unused]",
+      "em0623_c002.mot": "Camera: rider kick",
+      "em0623_c003.mot": "Camera: angry turn",
+      "pl0030_0480.mot": "Jack: clash grab",
+      "pl0030_0481.mot": "Jack: clash swing 1 (hat)",
+      "pl0030_0482.mot": "Jack: clash swing 2 (shades)",
+      "pl0030_0483.mot": "Jack: clash swing 3",
+      "pl0030_048a.mot": "Jack: clash swing 4",
+      "pl0030_0484.mot": "Jack: final clash swing",
+      "pl0030_0485.mot": "Jack: the -400 HP blow",
+      "pl0030_0486.mot": "Jack: loses the exchange",
+      "pl0030_0487.mot": "Jack: finale blow 1",
+      "pl0030_0488.mot": "Jack: finale blow 2",
+      "pl0030_0489.mot": "Jack: slow-motion blow",
+      "pl0030_048b.mot": "Jack: power-meter struggle",
+      "pl0030_120a.mot": "Jack move 120a [unused]",
+      "pl0030_1050.mot": "Jack: kill/grab candidate 1050 [unused]",
+      "pl0030_1051.mot": "Jack: knocks him to 1 HP",
+      "pl0030_1052.mot": "Jack: helicopter finale",
+      "pl0030_1055.mot": "Jack: beaten by Mathilda's bat",
+      "pl0030_047c.mot": "Jack: kill candidate 047c [unused]",
+      "wp0600_0480.mot": "Chainsaw arm: clash grab",
+      "wp0600_0481.mot": "Chainsaw arm: swing 1 (hat)",
+      "wp0600_0482.mot": "Chainsaw arm: swing 2 (shades)",
+      "wp0600_0483.mot": "Chainsaw arm: swing 3",
+      "wp0600_048a.mot": "Chainsaw arm: swing 4",
+      "wp0600_0484.mot": "Chainsaw arm: final swing",
+      "wp0600_0485.mot": "Chainsaw arm: -400 HP blow",
+      "wp0600_0486.mot": "Chainsaw arm: loses exchange",
+      "wp0600_0487.mot": "Chainsaw arm: finale blow 1",
+      "wp0600_0488.mot": "Chainsaw arm: finale blow 2",
+      "wp0600_0489.mot": "Chainsaw arm: slow-motion blow",
+      "wp0600_048b.mot": "Chainsaw arm: power meter",
+      "pl0030_c480.mot": "Camera: clash grab",
+      "pl0030_c48b.mot": "Camera: clash swing prompt [unused]",
+      "pl0030_c481.mot": "Camera: clash swing 1 (hat)",
+      "pl0030_c482.mot": "Camera: clash swing 2 (shades)",
+      "pl0030_c48c.mot": "Camera: clash swing 3",
+      "pl0030_c483.mot": "Camera: clash swing 4",
+      "pl0030_c484.mot": "Camera: final clash swing",
+      "pl0030_c485.mot": "Camera: the -400 HP blow",
+      "pl0030_c486.mot": "Camera: clash lost",
+      "pl0030_c487.mot": "Camera: finale blow 1",
+      "pl0030_c488.mot": "Camera: finale blow 2",
+      "pl0030_c489.mot": "Camera: slow-motion blow",
+      "pl0030_c48d.mot": "Camera: power meter",
+      "pl0030_c490.mot": "Camera: Jack 1050 [unused]",
+      "pl0030_c491.mot": "Camera: knocked to 1 HP",
+      "pl0030_c492.mot": "Camera: helicopter finale",
+      "pl0030_c493.mot": "Camera: Mathilda's bat beat-down"
+    },
+    "voices": {
+      "270": {
+        "name": "Mach punch call",
+        "trigger": "He starts the mach punch (wind-up, then the 0106 flurry)"
+      },
+      "271": {
+        "name": "Unplayed line 0x10F",
+        "trigger": "Not triggered by the port; research has no caller"
+      },
+      "272": {
+        "name": "Unplayed line 0x110",
+        "trigger": "Not triggered by the port; research has no caller"
+      },
+      "273": {
+        "name": "Unplayed line 0x111",
+        "trigger": "Not triggered by the port; research has no caller"
+      },
+      "274": {
+        "name": "He blocks",
+        "trigger": "He raises his guard against a hit (0121)"
+      },
+      "275": {
+        "name": "He takes a strong hit",
+        "trigger": "A heavy hit lands on him (hit types 0x2A..0x36, 0xCC..0xCE)"
+      },
+      "276": {
+        "name": "He takes a hit",
+        "trigger": "Any other hit lands on him"
+      },
+      "277": {
+        "name": "Baron wins (player dead)",
+        "trigger": "The player dies; he laughs over him (0002)"
+      },
+      "278": {
+        "name": "Clash start",
+        "trigger": "His clash grab (0300) catches the player"
+      },
+      "279": {
+        "name": "First clash won",
+        "trigger": "The player wins the first clash; he turns angry (phase 2)"
+      },
+      "280": {
+        "name": "Clash lost",
+        "trigger": "The player misses a swing step; he wins the exchange (0307)"
+      },
+      "281": {
+        "name": "Unplayed line 0x119",
+        "trigger": "Not triggered by the port; research has no caller"
+      },
+      "282": {
+        "name": "Baron wins, no continues",
+        "trigger": "Not triggered by the port (it plays 0x115); native: player dies with no continues"
+      },
+      "283": {
+        "name": "Taunt",
+        "trigger": "He taunts from his wait (random provocation 0001-0003)"
+      },
+      "284": {
+        "name": "Oiran item toss",
+        "trigger": "An oiran throws a recovery item into the ring (frame 16)"
+      },
+      "285": {
+        "name": "Mathilda's bat combo",
+        "trigger": "Mathilda beats Jack after the shoryuken catch (frame 80)"
+      },
+      "286": {
+        "name": "Unplayed line 0x11E",
+        "trigger": "Not triggered by the port; research has no caller"
+      },
+      "287": {
+        "name": "Shoryuken catch call (silent)",
+        "trigger": "His shoryuken catches Jack; id 0x11F is not in the c503 pack, nothing plays"
+      },
+      "4120": {
+        "name": "Player low HP",
+        "trigger": "Player HP under 30% (repeats on its cooldown)"
+      },
+      "4419": {
+        "name": "Chainsaw fuel line",
+        "trigger": "Not triggered by the port; native: chainsaw fuel (8027621C)"
+      },
+      "4421": {
+        "name": "Pickup line 1",
+        "trigger": "Not triggered by the port; native: item pickup (80271814)"
+      },
+      "4422": {
+        "name": "Pickup line 2",
+        "trigger": "Not triggered by the port; native: item pickup (80271814)"
+      },
+      "4423": {
+        "name": "Pickup line 3",
+        "trigger": "Not triggered by the port; native: item pickup (80271814)"
+      },
+      "4130": {
+        "name": "Unplayed line 0x1022",
+        "trigger": "Not triggered by the port; research has no caller"
+      },
+      "4375": {
+        "name": "Player idle fidget (silent)",
+        "trigger": "Player fidgets while idle; the c503 pack has no clips for it"
+      },
+      "4106": {
+        "name": "Giant swing spin (silent)",
+        "trigger": "Player spins a giant swing; the c503 pack has no clips for it"
+      },
+      "4107": {
+        "name": "Giant swing throw (silent)",
+        "trigger": "Player throws from a giant swing; the c503 pack has no clips for it"
+      },
+      "4420": {
+        "name": "Player death (silent)",
+        "trigger": "Player dies; the c503 pack has no clips for it"
+      }
+    },
+    "cameras": {
+      "em0623_c000.mot": {
+        "name": "Finale: knocked to 1 HP [unused]",
+        "actor": "em0623_030b.mot",
+        "player": "pl0030_1051.mot",
+        "scene": "Native camera of the 030b blow (HP to 1); the port films it with pl0030_c491"
+      },
+      "em0623_c001.mot": {
+        "name": "Finale: the helicopter [unused]",
+        "actor": "em0623_030c.mot",
+        "player": "pl0030_1052.mot",
+        "scene": "Native camera of the helicopter finisher; the port films it with pl0030_c492"
+      },
+      "em0623_c002.mot": {
+        "name": "Rider kick",
+        "actor": "em0623_0203.mot",
+        "player": "",
+        "scene": "His leaping lightning kick, from take-off to the landing hit",
+        "entry": "Attacks/Rider kick"
+      },
+      "em0623_c003.mot": {
+        "name": "Angry turn",
+        "actor": "em0623_000c.mot",
+        "player": "",
+        "scene": "He turns angry after losing the first clash; BGM switches to bs05 after",
+        "entry": "Attacks/Angry turn"
+      },
+      "pl0030_c480.mot": {
+        "name": "Clash: the grab",
+        "actor": "em0623_0301.mot",
+        "player": "pl0030_0480.mot",
+        "scene": "His grab catches Jack and the clash opens",
+        "entry": "Power struggle/Clash - player wins the exchanges"
+      },
+      "pl0030_c48b.mot": {
+        "name": "Clash: swing prompt [unused]",
+        "actor": "",
+        "player": "",
+        "scene": "Native clash sub 1 (the player's swing input); the port plays no camera there"
+      },
+      "pl0030_c481.mot": {
+        "name": "Clash swing 1: hat off",
+        "actor": "em0623_0302.mot",
+        "player": "pl0030_0481.mot",
+        "scene": "Jack's first swing knocks the Baron's hat off",
+        "entry": "Power struggle/Clash - player wins the exchanges"
+      },
+      "pl0030_c482.mot": {
+        "name": "Clash swing 2: shades off",
+        "actor": "em0623_0303.mot",
+        "player": "pl0030_0482.mot",
+        "scene": "Jack's second swing knocks the sunglasses off",
+        "entry": "Power struggle/Clash - player wins the exchanges"
+      },
+      "pl0030_c48c.mot": {
+        "name": "Clash swing 3",
+        "actor": "em0623_0304.mot",
+        "player": "pl0030_0483.mot",
+        "scene": "Jack's third clash swing",
+        "entry": "Power struggle/Clash - player wins the exchanges"
+      },
+      "pl0030_c483.mot": {
+        "name": "Clash swing 4",
+        "actor": "em0623_030d.mot",
+        "player": "pl0030_048a.mot",
+        "scene": "Jack's fourth clash swing",
+        "entry": "Power struggle/Clash - player wins the exchanges"
+      },
+      "pl0030_c484.mot": {
+        "name": "Clash: final swing",
+        "actor": "em0623_0305.mot",
+        "player": "pl0030_0484.mot",
+        "scene": "The last swing of the exchange lands",
+        "entry": "Power struggle/Clash - player wins the exchanges"
+      },
+      "pl0030_c485.mot": {
+        "name": "Clash won: -400 HP blow",
+        "actor": "em0623_0306.mot",
+        "player": "pl0030_0485.mot",
+        "scene": "Jack's big blow takes 400 HP off the Baron",
+        "entry": "Power struggle/Clash - player wins the exchanges"
+      },
+      "pl0030_c486.mot": {
+        "name": "Clash lost",
+        "actor": "em0623_0307.mot",
+        "player": "pl0030_0486.mot",
+        "scene": "The Baron wins the exchange and hits Jack (also the last-life execution)",
+        "entry": "Power struggle/Clash - player loses"
+      },
+      "pl0030_c487.mot": {
+        "name": "Finale blow 1",
+        "actor": "em0623_0308.mot",
+        "player": "pl0030_0487.mot",
+        "scene": "First blow of the finale chain (a later clash won at low HP)",
+        "entry": "Power struggle/Finale - player wins"
+      },
+      "pl0030_c488.mot": {
+        "name": "Finale blow 2",
+        "actor": "em0623_0309.mot",
+        "player": "pl0030_0488.mot",
+        "scene": "Second blow of the finale chain",
+        "entry": "Power struggle/Finale - player wins"
+      },
+      "pl0030_c489.mot": {
+        "name": "Finale: slow-motion blow",
+        "actor": "em0623_030a.mot",
+        "player": "pl0030_0489.mot",
+        "scene": "The meter is full: Jack's slow-motion blow",
+        "entry": "Power struggle/Finale - player wins"
+      },
+      "pl0030_c48d.mot": {
+        "name": "Finale: power meter",
+        "actor": "em0623_0309.mot",
+        "player": "pl0030_048b.mot",
+        "scene": "The tap-to-fill power struggle (the port holds 0309 at frame 30)",
+        "entry": "Power struggle/Finale - player wins"
+      },
+      "pl0030_c490.mot": {
+        "name": "Jack 1050 move [unused]",
+        "actor": "",
+        "player": "pl0030_1050.mot",
+        "scene": "Native pair of pl0030_1050, a kill / grab candidate (research open)",
+        "entry": "Power struggle/Finale - player wins"
+      },
+      "pl0030_c491.mot": {
+        "name": "Finale: knocked to 1 HP",
+        "actor": "em0623_030b.mot",
+        "player": "pl0030_1051.mot",
+        "scene": "Jack's blow drops the Baron to 1 HP",
+        "entry": "Power struggle/Finale - player wins"
+      },
+      "pl0030_c492.mot": {
+        "name": "Finale: the helicopter",
+        "actor": "em0623_030c.mot",
+        "player": "pl0030_1052.mot",
+        "scene": "The helicopter finisher; then he is dizzy, waiting for the last blow",
+        "entry": "Power struggle/Finale - player wins"
+      },
+      "pl0030_c493.mot": {
+        "name": "Mathilda's bat beat-down",
+        "actor": "em0610_0010.mot",
+        "player": "pl0030_1055.mot",
+        "scene": "His shoryuken knocks Jack to Mathilda at the ropes; she beats him with her bat",
+        "entry": "Grabs/Shoryuken into Mathilda's bat"
+      },
+      "em0960_c000.mot": {
+        "name": "Oiran item toss",
+        "actor": "em0960_0002.mot",
+        "player": "",
+        "scene": "An oiran throws a recovery item into the ring when the player is low",
+        "entry": "Ringside/Oiran item toss"
+      }
+    },
+    "phases": {
+      "Clash": {
+        "0": "Grab plays out",
+        "1": "Swing prompt",
+        "2": "Swing step plays",
+        "3": "Final swing",
+        "4": "The -400 HP blow",
+        "5": "Finale blow 1",
+        "6": "Finale blow 2",
+        "7": "Power meter",
+        "8": "Slow-motion blow",
+        "9": "Knocked to 1 HP",
+        "10": "The helicopter",
+        "50": "Exchange lost",
+        "60": "Execution: the grab",
+        "61": "Execution: killing blow"
+      },
+      "Grab": {
+        "0": "Wind-up",
+        "1": "Grab lunge"
+      },
+      "Combo": {
+        "0": "Step in",
+        "1": "Strikes"
+      },
+      "Mach": {
+        "0": "Wind-up",
+        "1": "Flurry"
+      },
+      "DropKick": {
+        "0": "Wind-up",
+        "1": "Drop kick"
+      },
+      "Shoryuken": {
+        "0": "Wind-up",
+        "1": "Uppercut"
+      },
+      "BhUpper": {
+        "0": "Wind-up",
+        "1": "Uppercut"
+      },
+      "GodHand": {
+        "0": "Wind-up",
+        "1": "Pull and blow"
+      },
+      "Dempsey": {
+        "0": "Roll 1",
+        "1": "Roll 2",
+        "2": "Roll 3",
+        "3": "Roll 4"
+      },
+      "state": {
+        "Wait": "Idle",
+        "Threat": "Threat",
+        "Angry": "Angry turn",
+        "Step": "Stepping in",
+        "Combo": "Combo",
+        "Mach": "Mach punch",
+        "DropKick": "Screw drop kick",
+        "Shoryuken": "Shoryuken",
+        "AntiAir": "Anti-air",
+        "BhUpper": "BH upper",
+        "GodHand": "God hand",
+        "Dempsey": "Dempsey roll",
+        "RiderKick": "Rider kick",
+        "Grab": "Grab",
+        "Clash": "Clash",
+        "Avoid": "Dodging",
+        "Guard": "Guarding",
+        "Damage": "Hurt",
+        "DmgPiyori": "Staggered",
+        "Piyori": "Dizzy (finish-ready)",
+        "PlDead": "Taunting his body",
+        "Hold": "Holding him for Mathilda",
+        "Finished": "Finished off",
+        "Editor": "Editor clip"
+      }
+    }
+  }
+}

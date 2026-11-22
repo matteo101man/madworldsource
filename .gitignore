@@ -1,7 +1,7 @@
 # derived or copyrighted data never goes in git
 extracted/
 staged/
-assets/
+assets/*
 *.dmp
 target*/
 .venv/
@@ -36,3 +36,27 @@ tools/soulstruct-havok/
 *.dll
 *.pdb
 pc-controls.toml
+
+# --- exceptions: the owner's own work that IS committed ---
+# assets/ was ignored wholesale above; re-open only these paths
+!assets/
+assets/*
+!assets/defs/
+!assets/characters/
+assets/characters/*
+!assets/characters/kreely/
+!assets/native/
+assets/native/*
+!assets/native/kreely-*
+!assets/native/audio/
+assets/native/audio/*
+!assets/native/audio/kreely/
+!assets/voices/
+assets/voices/*
+!assets/voices/kreely/
+# override the global *.wav / *.glb rules for Kreely
+!assets/native/kreely-*.glb
+!assets/native/audio/kreely/**/*.wav
+!assets/characters/kreely/**
+assets/characters/kreely/*.log
+assets/characters/kreely/*.err

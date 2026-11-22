@@ -1,0 +1,1838 @@
+diff --git a/port/app/main.cpp b/port/app/main.cpp
+index 9eed324..d595980 100644
+--- a/port/app/main.cpp
++++ b/port/app/main.cpp
+@@ -1,3 +1,6 @@
++#include "host_fiber.h"
++#include "snapshot.h"
++#include "native_config.h"
+ // MadWorld native port: boots the recompiled game.
+ //
+ // Usage: madworld [path/to/orig/RZZE8P]
+@@ -12,12 +15,14 @@
+ #include <thread>
+ 
+ #include "hle.h"
++#include "embed_host.h"
+ #include "mmio.h"
+ #include "os.h"
+ #include "ppc_memory.h"
+ 
+ extern std::string g_sys_dir;
+ extern std::string g_disc_dir;
++extern PPCContext* g_ppc_context_for_debug;
+ 
+ namespace {
+ uint8_t* g_m;
+@@ -33,6 +38,10 @@ LONG WINAPI on_crash(EXCEPTION_POINTERS* ep) {
+     }
+     std::fprintf(stderr, "\n");
+     ppc_print_guest_stack(stderr);
++    if(auto c=g_ppc_context_for_debug){
++        for(unsigned i=0;i<32;++i)std::fprintf(stderr,"r%u=%08X%s",i,c->r[i],i%4==3?"\n":" ");
++        std::fprintf(stderr,"lr=%08X ctr=%08X cr=%08X msr=%08X\n",c->lr,c->ctr,c->cr,c->msr);
++    }
+     std::fflush(stderr);
+     return EXCEPTION_EXECUTE_HANDLER;
+ }
+@@ -54,7 +63,12 @@ int main(int argc, char** argv) {
+     std::string root = argc > 1 ? argv[1] : "orig/RZZE8P";
+     g_sys_dir = root + "/sys";
+     g_disc_dir = root + "/disc";
+-    SetUnhandledExceptionFilter(on_crash);
++    // Local adapter: use the owner's existing extracted DATA partition directly.
++    if (const char* partition = native_config_get("MW_PARTITION_DIR")) {
++        g_sys_dir = std::string(partition) + "/sys";
++        g_disc_dir = partition;
++    }
++    if(!native_host_embedded())SetUnhandledExceptionFilter(on_crash);
+     setvbuf(stdout, nullptr, _IONBF, 0);
+ 
+     std::vector<uint8_t> dol = read_all(g_sys_dir + "/main.dol");
+@@ -73,7 +87,7 @@ int main(int argc, char** argv) {
+     mmio_init_devices();
+ 
+     // MW_TIMEOUT=<seconds>: dump the guest call stack and exit if still running (debugging hangs).
+-    if (const char* t = std::getenv("MW_TIMEOUT")) {
++    if (const char* t = native_host_embedded()?nullptr:native_config_get("MW_TIMEOUT")) {
+         int secs = std::atoi(t);
+         std::thread([secs] {
+             std::this_thread::sleep_for(std::chrono::seconds(secs));
+@@ -89,10 +103,20 @@ int main(int argc, char** argv) {
+     std::printf("[host] booting MadWorld, entry 0x%08X\n", entry);
+ 
+     static PPCContext c;
++    // The boot frame survives in a checkpoint; it must not own DOL heap storage.
++    std::vector<uint8_t>().swap(dol);
+     c.msr = 0x00002032;  // FP available, instruction/data translation on
+-    os_threads_init(m, &c);
+-    start(c, m);
++    struct Boot { uint8_t* m; PPCContext* c; PPCFunc start; } boot{m, &c, start};
++    auto run = [](void* arg) {
++        auto& boot = *static_cast<Boot*>(arg);
++        os_threads_init(boot.m, boot.c);
++        ppc_enable_interrupt_polling();
++        native_snapshot_load_request();
++        boot.start(*boot.c, boot.m);
++    };
++    if (native_host_embedded()) run(&boot);
++    else { host_fiber_call(run, &boot); os_threads_shutdown(nullptr); }
+     std::printf("[host] __start returned\n");
+-    ppc_memory_shutdown();
++    if(!native_host_embedded())ppc_memory_shutdown();
+     return 0;
+ }
+diff --git a/port/build.py b/port/build.py
+index cdc1859..d70d8a2 100644
+--- a/port/build.py
++++ b/port/build.py
+@@ -6,10 +6,13 @@ Usage:
+ 
+ Compiler, in order of preference:
+     --cxx, $CXX, build/tools/llvm-mingw/bin/clang++.exe, clang++/g++ on PATH, cl.exe on PATH.
+-GNU-style (clang++, g++) and MSVC-style (cl, clang-cl) drivers are both supported.
++Owned-stack runtime currently requires MSVC-style cl/clang-cl with the static
++MSVC CRT and ml64. GNU-style flag generation below is retained for reference.
+ Writes port/build/build.ninja and runs ninja (pip install ninja).
+ """
+ import argparse
++import hashlib
++import json
+ import os
+ import shutil
+ import subprocess
+@@ -20,8 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
+ PORT = ROOT / "port"
+ BUILD = PORT / "build"
+ GEN = PORT / "generated"
++RSOGEN = PORT / "generated-rso"
+ 
+-INCLUDES = [PORT / "runtime/cpu", PORT / "runtime/os", PORT / "runtime/hw", GEN]
++INCLUDES = [PORT / "runtime/cpu", PORT / "runtime/os", PORT / "runtime/hw", GEN, RSOGEN]
+ # executable -> its own main source; everything in runtime/ is shared
+ EXES = {"madworld.exe": "app/main.cpp", "difftest.exe": "tests/difftest.cpp"}
+ 
+@@ -50,24 +54,58 @@ def main():
+     ap.add_argument("--cxx")
+     ap.add_argument("--recomp", action="store_true", help="re-run the recompiler first")
+     ap.add_argument("--debug", action="store_true")
++    ap.add_argument("--jobs", type=int, default=4)
++    ap.add_argument("--build-dir", type=Path, help="alternate output directory (optimization experiments); default port/build")
++    ap.add_argument("--fp", choices=("strict", "precise"), default="strict",
++                    help="game/runtime FP model; tests always use /fp:strict (they exercise fesetround)")
++    ap.add_argument("--ltcg", action="store_true", help="MSVC whole-program optimization (/GL + /LTCG)")
++    ap.add_argument("--arch", choices=("none", "AVX2"), default="none", help="MSVC /arch for game/runtime code")
++    ap.add_argument("--dol", type=Path, help="owned DOL path for generation; otherwise reuse generation manifest")
+     args = ap.parse_args()
++    global BUILD
++    if args.build_dir:
++        BUILD = args.build_dir.resolve()
+ 
+     recomp_inputs = [PORT / "recomp/recomp.py", PORT / "recomp/ppc_decode.py", PORT / "recomp/hle.txt",
+                      ROOT / "config/RZZE8P/symbols.txt"]
+-    stale = not (GEN / "funcs.h").exists() or any(
+-        p.stat().st_mtime > (GEN / "funcs.h").stat().st_mtime for p in recomp_inputs)
++    stamp_path = GEN / "generation.json"
++    stamp = json.loads(stamp_path.read_text(encoding="utf-8")) if stamp_path.exists() else {}
++    dol_path = args.dol or Path(stamp.get("dol", ROOT / "orig/RZZE8P/sys/main.dol"))
++    recorded = stamp.get("inputs", {})
++    stale = not (GEN / "funcs.h").exists() or not recorded or any(
++        not Path(p).exists() or hashlib.sha256(Path(p).read_bytes()).hexdigest() != digest
++        for p, digest in recorded.items()) or str(dol_path.resolve()) not in recorded
+     if args.recomp or stale:
+-        subprocess.run([sys.executable, str(PORT / "recomp/recomp.py")], check=True)
++        subprocess.run([sys.executable, str(PORT / "recomp/recomp.py"), "--dol", str(dol_path)], check=True)
++
++    rso_stamp_path = RSOGEN / "generation.json"
++    if not rso_stamp_path.exists():
++        sys.exit("Generate the owned enemy module first with port/recomp/rso_recomp.py --export PATH --analysis PATH")
++    rso_stamp = json.loads(rso_stamp_path.read_text(encoding="utf-8"))
++    if not rso_stamp.get("inputs"):
++        sys.exit("Regenerate RSO once to record generation inputs")
++    if any(not Path(p).exists() or hashlib.sha256(Path(p).read_bytes()).hexdigest() != digest
++           for p, digest in rso_stamp["inputs"].items()):
++        subprocess.run([sys.executable, str(PORT / "recomp/rso_recomp.py"), "--export", rso_stamp["export"],
++                        "--analysis", rso_stamp["analysis"]], check=True)
++
++    subprocess.run([sys.executable, str(PORT / "recomp/rso_fixture.py")], check=True)
+ 
+     cxx = find_cxx(args.cxx)
+     msvc = cxx.stem.lower() in ("cl", "clang-cl")
++    if not msvc:
++        sys.exit("Owned-stack runtime requires cl/clang-cl with the static MSVC CRT; use tools/build_native_msvc.cmd")
+     inc = " ".join(("/I" if msvc else "-I") + f'"{p}"' for p in INCLUDES)
+     if msvc:
+-        common = f"/nologo /std:c++20 /EHsc /fp:strict {inc} " + ("/Od /Zi" if args.debug else "/O2")
++        opt = "/Od /Zi" if args.debug else "/O2"
++        # Defaults reproduce the historical command lines exactly (no needless ninja rebuilds).
++        common = f"/nologo /std:c++20 /EHsc /fp:{args.fp} {inc} " + opt             + (" /GL" if args.ltcg else "") + (f" /arch:{args.arch}" if args.arch != "none" else "")
+         gen_flags = common + " /w /bigobj"
+         rt_flags = common + " /W3"
++        test_flags = f"/nologo /std:c++20 /EHsc /fp:strict {inc} " + opt + " /W3"
+         obj, exe_flags = ".obj", ""
+-        compile_cmd = f'"{cxx}" $flags /c $in /Fo$out'
++        compile_cmd = f'"{cxx}" $flags /showIncludes /c $in /Fo$out'
++        dependencies = ["  deps = msvc"]
+         link_cmd = f'"{cxx}" /nologo $in /Fe$out'
+     else:
+         # -ffp-contract=off: only PowerPC's own fused ops (emitted as std::fma) may fuse.
+@@ -75,23 +113,37 @@ def main():
+                   + ("-O0 -g" if args.debug else "-O2"))
+         gen_flags = common + " -w"
+         rt_flags = common + " -Wall"
++        test_flags = rt_flags
+         obj, exe_flags = ".o", " -static"
+-        compile_cmd = f'"{cxx}" $flags -c $in -o $out'
++        compile_cmd = f'"{cxx}" $flags -MMD -MF $out.d -c $in -o $out'
++        dependencies = ["  deps = gcc", "  depfile = $out.d"]
+         link_cmd = f'"{cxx}" $in -o $out{exe_flags}'
+ 
+     gen_srcs = sorted(GEN.glob("recomp_*.cpp")) + [GEN / "func_table.cpp"]
++    gen_srcs += sorted(RSOGEN.glob("rso_recomp_*.cpp")) + [RSOGEN / "rso_func_table.cpp"]
+     rt_srcs = sorted((PORT / "runtime").rglob("*.cpp"))
++    assembler = shutil.which("ml64") or str(cxx.parent / "ml64.exe")
++    if not Path(assembler).exists():
++        sys.exit("Owned x64 guest stacks require ml64.exe (run from the x64 MSVC developer environment)")
+     BUILD.mkdir(parents=True, exist_ok=True)
+     lines = [
+-        "rule cxx_gen", f"  command = {compile_cmd.replace('$flags', gen_flags)}", "  description = CXX $in",
+-        "rule cxx_rt", f"  command = {compile_cmd.replace('$flags', rt_flags)}", "  description = CXX $in",
++        "rule cxx_gen", f"  command = {compile_cmd.replace('$flags', gen_flags)}", "  description = CXX $in", *dependencies,
++        "rule cxx_rt", f"  command = {compile_cmd.replace('$flags', rt_flags)}", "  description = CXX $in", *dependencies,
++        "rule cxx_test", f"  command = {compile_cmd.replace('$flags', test_flags)}", "  description = CXX $in", *dependencies,
+         "rule link", f"  command = {link_cmd}", "  description = LINK $out",
++        "rule asm", f'  command = "{assembler}" /nologo /c /Fo$out $in', "  description = ASM $in",
+     ]
++    if msvc:
++        lines += ["rule link_dll",f'  command = "{cxx}" /nologo /LD $in /Fe$out /link /INCREMENTAL:NO /DYNAMICBASE:NO /BASE:0x1A0000000 /ENTRY:mw_native_dll_entry /MAP:madworld_core.map' + (" /LTCG" if args.ltcg else ""),"  description = DLL $out"]
+     funcs_h = ninja_escape(GEN / "funcs.h")
+     shared = []
++    fiber_obj = BUILD / "obj/runtime/os" / ("fiber_x64" + obj)
++    lines.append(f"build {ninja_escape(fiber_obj)}: asm {ninja_escape(PORT / 'runtime/os/fiber_x64.asm')}")
++    shared.append(fiber_obj)
+     for s in gen_srcs:
+         o = BUILD / "obj/generated" / (s.stem + obj)
+-        lines.append(f"build {ninja_escape(o)}: cxx_gen {ninja_escape(s)} | {funcs_h}")
++        dependency = ninja_escape((RSOGEN if s.parent == RSOGEN else GEN) / ("rso_funcs.h" if s.parent == RSOGEN else "funcs.h"))
++        lines.append(f"build {ninja_escape(o)}: cxx_gen {ninja_escape(s)} | {dependency}")
+         shared.append(o)
+     for s in rt_srcs:
+         o = BUILD / "obj" / s.relative_to(PORT).with_suffix(obj)
+@@ -103,9 +155,36 @@ def main():
+         lines.append(f"build {ninja_escape(o)}: cxx_rt {ninja_escape(s)} | {funcs_h}")
+         lines.append(f"build {ninja_escape(BUILD / exe)}: link {ninja_escape(o)} "
+                      + " ".join(ninja_escape(x) for x in shared))
++    if msvc:
++        embedded_src = PORT / "app/embedded.cpp"
++        embedded_obj = BUILD / "obj/app/embedded.obj"
++        lines.append(f"build {ninja_escape(embedded_obj)}: cxx_rt {ninja_escape(embedded_src)}")
++        lines.append(f"build madworld_core.dll: link_dll {ninja_escape(embedded_obj)} {ninja_escape(BUILD / 'obj/app/main.obj')} " + " ".join(ninja_escape(x) for x in shared))
++    for test in ("gx_transport", "hci_protocol", "ai_clock", "irq_snapshot", "hardware_events", "ipc_transport", "rso_relocations", "native_unwind", "di_async", "nand_fs", "input_file", "dirty_tracking", "quant_scale", "thread_reuse", "host_fiber", "pc_ui_overlay"):
++        transport_src = PORT / ("tests/" + test + ".cpp")
++        transport_obj = BUILD / "obj/tests" / (test + obj)
++        lines.append(f"build {ninja_escape(transport_obj)}: cxx_test {ninja_escape(transport_src)}")
++        extra = []
++        if test in ("irq_snapshot", "hardware_events"):
++            extra = [BUILD / "obj/runtime" / Path(p).with_suffix(obj) for p in
++                     ("os/interrupts.cpp", "hw/mmio.cpp", "cpu/ppc_memory.cpp")]
++        if test == "dirty_tracking":
++            extra = [BUILD / "obj/runtime/cpu" / ("ppc_memory" + obj)]
++        if test in ("di_async", "nand_fs"):
++            extra = [BUILD / "obj/runtime/cpu" / ("ppc_memory" + obj)]
++        if test in ("native_unwind", "thread_reuse"):
++            extra = [BUILD / "obj/runtime/cpu" / ("ppc_memory" + obj)]
++        if test in ("thread_reuse", "host_fiber"):
++            extra += [fiber_obj, BUILD / "obj/runtime/os" / ("host_fiber" + obj)]
++        if test == "rso_relocations":
++            extra = [BUILD / "obj/runtime" / Path(p).with_suffix(obj) for p in ("cpu/rso.cpp", "cpu/ppc_memory.cpp")]
++        if test == "ipc_transport":
++            extra = [BUILD / "obj/runtime" / Path(p).with_suffix(obj) for p in
++                     ("ios/ipc.cpp", "hw/mmio.cpp")]
++        lines.append(f"build {test}.exe: link {ninja_escape(transport_obj)} " + " ".join(ninja_escape(p) for p in extra))
+     (BUILD / "build.ninja").write_text("\n".join(lines) + "\n")
+     print(f"compiler: {cxx}")
+-    subprocess.run([sys.executable, "-m", "ninja", "-C", str(BUILD)], check=True)
++    subprocess.run([sys.executable, "-m", "ninja", "-C", str(BUILD), "-j", str(args.jobs)], check=True)
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/port/recomp/hle.txt b/port/recomp/hle.txt
+index eeef257..c5fbf6a 100644
+--- a/port/recomp/hle.txt
++++ b/port/recomp/hle.txt
+@@ -15,3 +15,116 @@
+ 0x802FE82C  OSEnableInterrupts   # os/interrupts.cpp (delivers pending interrupts)
+ 0x802FE840  OSRestoreInterrupts  # os/interrupts.cpp (delivers pending interrupts)
+ 0x802F7ACC  PPCMtdec             # os/interrupts.cpp (decrementer -> host timer)
++
++# Transparent, optional diagnostics: each wrapper calls the original body.
++0x802140E4  TraceWorldLoad      # game/trace_boot.cpp
++0x801FC51C  TraceEffectInit     # game/trace_boot.cpp
++0x801FC87C  TraceEffectCleanup  # game/trace_boot.cpp
++0x80215160  TraceSceneUpdate    # game/trace_boot.cpp
++0x800DA39C  TraceCommonInit     # game/trace_boot.cpp
++0x800DA420  TraceCommonLoad     # game/trace_boot.cpp
++0x8024C8E4  TraceCorePack       # game/trace_boot.cpp
++
++0x802E4AE8  TraceNativeThrow    # game/trace_boot.cpp: original unwind diagnostic
++0x8021F368  NativeTaskEntryBridge # game/native_unwind.cpp: original task catch continuation
++
++# Original sound route diagnostics; every wrapper calls the native body.
++0x8026A108 TracePlayBGM # game/trace_sound.cpp
++0x8026B558 TracePlayVoice # game/trace_sound.cpp
++0x802683D0 TracePlaySE # game/trace_sound.cpp
++0x80268628 TracePlaySEOneShot # game/trace_sound.cpp
++
++0x8026FE74 TracePropFactory # game/trace_objects.cpp: original factory, diagnostic only
++
++0x8026FED4 TraceActorFactory # game/trace_objects.cpp: verified tail target of CreateObj
++0x80216534 TracePlayerPoint # game/trace_objects.cpp: original point setter
++
++0x80145934 TraceStage201Logic # game/trace_boot.cpp: original stage201 RPN setup
++0x801E3AAC TraceBossThreshold # game/trace_boot.cpp: original getter enum24
++
++0x80147BBC TraceNativeBossEntry # game/trace_boot.cpp: original demo/event21/EMS10 sequence
++0x80123820 TraceNativeEventRequest # game/trace_boot.cpp
++0x8005B6A4 TraceRpnSend # game/trace_boot.cpp: original named-message send, MW_TRACE_RPN only
++0x8005B724 TraceRpnInvoke # game/trace_boot.cpp: original listener invoke inside send
++0x8005B674 TraceRpnBroadcast # game/trace_boot.cpp: original broadcast send, MW_TRACE_RPN only
++0x80113900 TraceRpnListenerSet # game/trace_boot.cpp: original cListenerBase::set, MW_TRACE_RPN only
++0x80086C9C TraceBeginDemoMode # game/trace_boot.cpp: original BeginDemoMode, MW_TRACE_RPN log only
++0x80086D58 TraceEndDemoMode # game/trace_boot.cpp: original EndDemoMode, MW_TRACE_RPN log only
++0x80280F84 TracePlayerDemoGuardBegin # game/trace_boot.cpp: original player demo guard begin, MW_TRACE_RPN log only
++0x802788B0 TracePlayerDemoGuardEnd # game/trace_boot.cpp: original player demo guard end, MW_TRACE_RPN log only
++0x80244DBC TraceContinueWindow # game/trace_boot.cpp: original continue/game-over window open, MW_TRACE_RPN log only
++0x80245370 TraceGameOverBanner # game/trace_boot.cpp: original game-over banner, MW_TRACE_RPN log only
++0x800A6F60 TraceNativeEventClock # game/trace_boot.cpp
++
++0x801EAAE8 TraceEnemySetLoad # game/trace_objects.cpp: original EMS loader
++0x801EA61C TraceEnemySetIdentity # game/trace_objects.cpp: original ID selector
++
++0x801EB484 TraceBossSetUpdate # game/trace_objects.cpp
++0x801EB298 TraceBossSetEligibility # game/trace_objects.cpp
++0x8026F538 RemovedStrapScreen # game/pc_removed.cpp: boot wrist-strap screen not shown in the PC port
++
++# PC free camera (default off, MW_PC_FREE_CAMERA=1; research/PC-CAMERA.md). Both call the original body.
++0x802C9F3C PlayerFollowCamera # game/pc_camera.cpp: orbit offset inside the original follow camera
++0x800BA4B0 MtxInitRotVec # game/pc_camera.cpp: only the follow camera's call (LR 802CA61C) is changed
++
++# PC death cinematic (default on, MW_PC_DEATH_CINEMATIC=0 / MW_PC_DEATH_NO_STATIC=0 restore the original; research/PC-DEATH-CINEMATIC.md). All call the original, except StaticWipe for one caller under its own toggle.
++0x802C0F80 PlayerDeadUpdate # game/pc_death_cinematic.cpp: state 95 update, observed only
++0x8025AA04 MotionStep # game/pc_death_cinematic.cpp: Jack's death motion step scaled (LR 800793F4 only)
++0x801248A4 PlayerDeadQuery # game/pc_death_cinematic.cpp: held at 0 for LR 80128714 during the shot
++0x801241A0 StaticWipe # game/pc_death_cinematic.cpp: MW_PC_DEATH_NO_STATIC skips it for LR 80127E54 only
++
++# PC input: WPAD/KPAD API answered by host code, no Bluetooth stack (research/INPUT-HLE.md).
++# Every wrapper runs the original body under MW_INPUT_HLE=legacy|compare.
++0x8036E260 KPADInit # game/input_hle.cpp: sole entry to KPADiInit -> WPADInit -> WUDInit
++0x8032B1D8 WPADRegisterAllocator # game/input_hle.cpp
++0x8032B1DC WPADGetStatus # game/input_hle.cpp
++0x8036B07C KPADSetParamA # game/input_hle.cpp
++0x8036B098 KPADSetParamB # game/input_hle.cpp
++0x8036B0B4 KPADSetParamC # game/input_hle.cpp
++0x8036B0D0 KPADSetParamD # game/input_hle.cpp
++0x8036E820 KPADSetConnectCallback # game/input_hle.cpp
++0x8036E888 KPADDisableDPD # game/input_hle.cpp
++0x8036E8A4 KPADEnableDPD # game/input_hle.cpp
++0x8036D950 KPADReadEx # game/input_hle.cpp
++0x8032C564 WPADProbe # game/input_hle.cpp
++0x8032C7A0 WPADSetDataFormat # game/input_hle.cpp
++0x8032C418 WPADDisconnect # game/input_hle.cpp
++0x8032B1E0 WPADGetRadioSensitivity # game/input_hle.cpp
++0x8032C8AC WPADGetInfoAsync # game/input_hle.cpp
++0x8032CACC WPADControlMotor # game/input_hle.cpp
++0x8032C4D8 WPADEnableMotor # game/input_hle.cpp
++0x8032C50C WPADResetAutoSleep # game/input_hle.cpp
++0x8032D2EC WPADIsSpeakerEnabled # game/input_hle.cpp
++0x8032D330 WPADControlSpeaker # game/input_hle.cpp
++0x8032EB08 WPADCanSendStreamData # game/input_hle.cpp
++0x8032EB8C WPADSendStreamData # game/input_hle.cpp
++0x8032B1CC HbmWpadSyncA # game/input_hle.cpp: Home Button Menu only
++0x8032B1D0 HbmWpadSyncB # game/input_hle.cpp
++0x8032B1D4 HbmWpadSyncC # game/input_hle.cpp
++0x8032CB98 HbmWpadSetA # game/input_hle.cpp
++0x8032CBCC HbmWpadSetB # game/input_hle.cpp
++0x8032CDE8 HbmWpadSaveConfig # game/input_hle.cpp
++0x8032E94C HbmWpadDpdA # game/input_hle.cpp
++0x8032E980 HbmWpadDpdB # game/input_hle.cpp
++0x80330918 HbmWpadQuery # game/input_hle.cpp
++0x8032C678 HbmWpadQueryB # game/input_hle.cpp
++0x8032C700 HbmWpadQueryC # game/input_hle.cpp
++
++# GX SDK hooks (research/GX-HLE.md, names in research/gx-sdk-functions.json). Each calls the
++# original body unless MW_GX_HLE=compare, which also checks an independent encoding.
++0x80374FA8  GXSetTevColorIn   # gx/gx_hle.cpp
++0x80374FE8  GXSetTevAlphaIn   # gx/gx_hle.cpp
++0x80375028  GXSetTevColorOp   # gx/gx_hle.cpp
++0x80375080  GXSetTevAlphaOp   # gx/gx_hle.cpp
++0x803758E4  GXSetBlendMode    # gx/gx_hle.cpp
++0x8037598C  GXSetZMode        # gx/gx_hle.cpp
++
++# Frame-rate wait: same polling/exit as the original, but sleeps until the next
++# hardware deadline instead of spinning. Opt-in (MW_FRAME_WAIT_HLE=1) for now.
++0x8026F324  FrameWaitRetrace  # game/frame_wait.cpp
++
++# Original effect requests (MW_TRACE_EFFECTS); every wrapper calls the native body.
++0x801FD578 TraceSetEffect # game/trace_effects.cpp
++0x801FE990 TraceCreateEff # game/trace_effects.cpp
++0x801FE7AC TraceCreatePartsEff # game/trace_effects.cpp
++0x801E1680 TraceBloodColor # game/trace_effects.cpp
+diff --git a/port/recomp/recomp.py b/port/recomp/recomp.py
+index 07e7c98..beeed94 100644
+--- a/port/recomp/recomp.py
++++ b/port/recomp/recomp.py
+@@ -16,6 +16,8 @@ the runtime provides `f_XXXXXXXX` itself (high-level emulation of SDK code).
+     report.txt       stats, unhandled instructions, odd control flow
+ """
+ import argparse
++import hashlib
++import json
+ import re
+ import sys
+ from collections import Counter, defaultdict
+@@ -80,6 +82,8 @@ class Recompiler:
+         self._addrs = [f.addr for f in funcs]
+         self.report = Counter()
+         self.notes = []
++        bridge_path = Path(__file__).with_name("native-bridges.json")
++        self.bridges = json.loads(bridge_path.read_text()) if bridge_path.exists() else {}
+ 
+     # --- lookups ---------------------------------------------------------
+     def func_at(self, addr):
+@@ -127,6 +131,12 @@ class Recompiler:
+             # A bctr can only land on addresses some data word points at (jump tables).
+             f.jump_targets = sorted(data_targets.get(f, ())) if f.has_bcctr else []
+             f.labels.update(f.jump_targets)
++        for entry in self.bridges.get("continuations", []):
++            address = int(entry, 16)
++            function = self.func_at(address)
++            if function:
++                function.entries.add(address)
++                function.labels.add(address)
+         self.report["functions"] = len(self.funcs)
+         self.report["extra entry points"] = sum(len(f.entries) - 1 for f in self.funcs)
+ 
+@@ -138,6 +148,12 @@ class Recompiler:
+             return (ins.f["bd"] if ins.f["aa"] else addr + ins.f["bd"]) & 0xFFFFFFFF
+         return None
+ 
++    def immediate(self, addr, value):
++        return str(value)
++
++    def linked_pc(self, addr):
++        return f"0x{addr:08X}u"
++
+     # --- emission helpers ------------------------------------------------
+     def call_expr(self, tgt):
+         g = self.func_at(tgt)
+@@ -177,44 +193,49 @@ class Recompiler:
+         FR = lambda n: f"c.f[{n}]"  # noqa: E731
+ 
+         def ea_d():
+-            return f"({RA0(F['ra'])} + (uint32_t){F['d']})"
++            return f"({RA0(F['ra'])} + (uint32_t){self.immediate(addr, F['d'])})"
+ 
+         def ea_x():
+             return f"({RA0(F['ra'])} + c.r[{F['rb']}])"
+ 
++        if f"{addr:08x}" in self.bridges.get("nonlocal_returns", []):
++            if o != "bclr" or F["lk"]:
++                raise ValueError("Native unwind boundary differs from verified return")
++            return "extern void ppc_native_unwind(PPCContext&, uint8_t*, uint32_t); ppc_native_unwind(c, m, c.lr); return;"
++
+         # ---- branches
+         if o == "b":
+             tgt = self.branch_target(addr, ins)
+             if F["lk"]:
+                 if tgt == nxt:
+-                    return f"c.lr = 0x{nxt:08X}u;"
+-                return f"c.lr = 0x{nxt:08X}u; {self.call_expr(tgt)}"
++                    return f"c.lr = {self.linked_pc(nxt)};"
++                return f"c.lr = {self.linked_pc(nxt)}; {self.call_expr(tgt)}"
+             return self.jump(f, addr, tgt)
+         if o == "bc":
+             tgt = self.branch_target(addr, ins)
+             pre, cond = self.cond_expr(F["bo"], F["bi"])
+             if F["lk"]:
+-                return f"{pre}if ({cond}) {{ c.lr = 0x{nxt:08X}u; {self.call_expr(tgt)} }}"
++                return f"{pre}if ({cond}) {{ c.lr = {self.linked_pc(nxt)}; {self.call_expr(tgt)} }}"
+             return f"{pre}if ({cond}) {self.jump(f, addr, tgt)}"
+         if o == "bclr":
+             pre, cond = self.cond_expr(F["bo"], F["bi"])
+             if F["lk"]:
+-                return (f"{pre}if ({cond}) {{ uint32_t t = c.lr; c.lr = 0x{nxt:08X}u; "
++                return (f"{pre}if ({cond}) {{ uint32_t t = c.lr; c.lr = {self.linked_pc(nxt)}; "
+                         f"ppc_call_indirect(c, m, t); }}")
+             return f"{pre}if ({cond}) return;" if cond != "true" else f"{pre}return;"
+         if o == "bcctr":
+             pre, cond = self.cond_expr(F["bo"], F["bi"])
+             if F["lk"]:
+-                return f"{pre}if ({cond}) {{ c.lr = 0x{nxt:08X}u; ppc_call_indirect(c, m, c.ctr); }}"
++                return f"{pre}if ({cond}) {{ c.lr = {self.linked_pc(nxt)}; ppc_call_indirect(c, m, c.ctr); }}"
+             cases = "".join(f" case 0x{t:08X}u: goto L_{t:08X};" for t in f.jump_targets)
+             body = f"switch (c.ctr) {{{cases} default: ppc_call_indirect(c, m, c.ctr); return; }}"
+             return f"{pre}if ({cond}) {{ {body} }}" if cond != "true" else f"{pre}{body}"
+ 
+         # ---- integer arithmetic
+         if o == "addi":
+-            return f"{R(F['rd'])} = {RA0(F['ra'])} + (uint32_t){F['simm']};"
++            return f"{R(F['rd'])} = {RA0(F['ra'])} + (uint32_t){self.immediate(addr, F['simm'])};"
+         if o == "addis":
+-            return f"{R(F['rd'])} = {RA0(F['ra'])} + 0x{(F['simm'] << 16) & 0xFFFFFFFF:08X}u;"
++            return f"{R(F['rd'])} = {RA0(F['ra'])} + ((uint32_t){self.immediate(addr, F['simm'])} << 16);"
+         if o == "addic":
+             return (f"{{ uint32_t a = {R(F['ra'])}; uint32_t r = a + (uint32_t){F['simm']}; "
+                     f"c.ca = r < a; {R(F['rd'])} = r;{rc('r')} }}")
+@@ -496,7 +517,7 @@ class Recompiler:
+             upd = "u" in o[4:]
+             ra = F["ra"]
+             base = "0u" if ra == 0 and not upd else f"c.r[{ra}]"
+-            ea = f"({base} + c.r[{F['rb']}])" if indexed else f"({base} + (uint32_t){F['d']})"
++            ea = f"({base} + c.r[{F['rb']}])" if indexed else f"({base} + (uint32_t){self.immediate(addr, F['d'])})"
+             gqr = f"c.gqr[{F['i']}]"
+             fn = "psq_store" if store else "psq_load"
+             body = f"{fn}(c, m, ea, {F['fd']}, {F['w']}, {gqr});"
+@@ -552,6 +573,13 @@ class Recompiler:
+     # --- per function ----------------------------------------------------
+     def emit_function(self, f):
+         lines = []
++        backedges = set()
++        for address, word in self.words(f):
++            instruction = decode(word) if word is not None else None
++            if instruction and instruction.op in ("b", "bc") and not instruction.f.get("lk"):
++                target = self.branch_target(address, instruction)
++                if f.addr <= target <= address:
++                    backedges.add(target)
+         multi = len(f.entries) > 1
+         hdr = f"// {f.name}  0x{f.addr:08X}-0x{f.end:08X}"
+         if multi:
+@@ -569,6 +597,8 @@ class Recompiler:
+         for addr, w in self.words(f):
+             if addr in f.labels:
+                 lines.append(f"L_{addr:08X}:")
++                if addr in backedges:
++                    lines.append("\tppc_poll(c, m); // cooperative IRQ safe point on original loop")
+             ins = decode(w) if w is not None else None
+             if ins is None:
+                 self.report["invalid words inside functions"] += 1
+@@ -588,7 +618,8 @@ class Recompiler:
+         lines.append("}")
+         if multi:
+             for e in sorted(f.entries):
+-                lines.append(f"PPC_FUNC(f_{e:08X}) {{ body_{f.addr:08X}(c, m, 0x{e:08X}u); }}")
++                name = f"f_{e:08X}" + ("_recomp" if e in self.overrides else "")
++                lines.append(f"PPC_FUNC({name}) {{ body_{f.addr:08X}(c, m, 0x{e:08X}u); }}")
+         return "\n".join(lines)
+ 
+     @staticmethod
+@@ -671,10 +702,17 @@ def main():
+     overrides = load_overrides(Path(__file__).parent / "hle.txt")
+     rc = Recompiler(Dol(args.dol), load_functions(args.symbols), overrides)
+     rc.analyze()
+-    bad = [a for a in overrides if a not in rc.starts or len(rc.starts[a].entries) > 1]
++    bad = [a for a in overrides if a not in rc.starts]
+     if bad:
+-        sys.exit("hle.txt: not a single-entry function start: " + ", ".join(f"0x{a:08X}" for a in bad))
++        sys.exit("hle.txt: not a function start: " + ", ".join(f"0x{a:08X}" for a in bad))
+     n = rc.write(args.out, args.per_file)
++    inputs = [Path(__file__), Path(__file__).with_name("ppc_decode.py"), Path(__file__).with_name("native-bridges.json"),
++              Path(__file__).with_name("dol.py"), Path(__file__).with_name("hle.txt"),
++              args.symbols, args.dol]
++    (args.out / "generation.json").write_text(json.dumps({
++        "dol": str(args.dol.resolve()), "perFile": args.per_file,
++        "inputs": {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
++    }, indent=2) + "\n", encoding="utf-8")
+     for k, v in sorted(rc.report.items()):
+         print(f"{k}: {v}")
+     print(f"wrote {n} files to {args.out}")
+diff --git a/port/runtime/cpu/ppc_context.h b/port/runtime/cpu/ppc_context.h
+index 7028637..8b148f1 100644
+--- a/port/runtime/cpu/ppc_context.h
++++ b/port/runtime/cpu/ppc_context.h
+@@ -12,6 +12,8 @@
+ #include <cstddef>
+ #include <cstdint>
+ #include <cstring>
++#include "native_dirty.h"
++#include "ppc_quant_scale.h"
+ 
+ #if defined(_MSC_VER) && !defined(__clang__)
+ #include <stdlib.h>
+@@ -19,11 +21,13 @@
+ #define PPC_BSWAP32 _byteswap_ulong
+ #define PPC_BSWAP64 _byteswap_uint64
+ #define PPC_UNLIKELY(x) (x)
++#define PPC_FORCEINLINE __forceinline
+ #else
+ #define PPC_BSWAP16 __builtin_bswap16
+ #define PPC_BSWAP32 __builtin_bswap32
+ #define PPC_BSWAP64 __builtin_bswap64
+ #define PPC_UNLIKELY(x) __builtin_expect(!!(x), 0)
++#define PPC_FORCEINLINE inline __attribute__((always_inline))
+ #endif
+ 
+ struct FPR {
+@@ -73,7 +77,22 @@ struct PPCEnterGuard {
+     }
+     ~PPCEnterGuard() { g_ppc_trace->depth--; }
+ };
+-#define PPC_ENTER(addr) PPCEnterGuard ppc_enter_guard_(addr)
++// Function boundaries provide cooperative interrupt safe points in original
++// polling loops that never call OSRestoreInterrupts. Disabled in CPU difftests.
++// Called at every guest function entry, so the common case is inline: interrupt
++// delivery keeps its cadence (every 64th poll counted while polling is enabled and
++// MSR[EE]=1); the host stop check and RSO attach run on that path or every 64th call.
++void ppc_poll_slow(PPCContext& c,uint8_t* m,bool deliver);
++extern bool g_ppc_poll_enabled;
++extern uint32_t g_ppc_poll_calls,g_ppc_poll_host;
++extern PPCContext* g_ppc_context_for_debug;
++inline void ppc_poll(PPCContext& c,uint8_t* m) {
++    g_ppc_context_for_debug=&c;
++    const bool deliver=g_ppc_poll_enabled&&(c.msr&0x8000u /*MSR_EE*/)&&((++g_ppc_poll_calls&63)==0);
++    if(PPC_UNLIKELY(deliver||((++g_ppc_poll_host&63)==0)))ppc_poll_slow(c,m,deliver);
++}
++void ppc_enable_interrupt_polling();
++#define PPC_ENTER(addr) ppc_poll(c,m); PPCEnterGuard ppc_enter_guard_(addr)
+ 
+ struct PPCFuncName {
+     uint32_t addr, end;
+@@ -108,67 +127,67 @@ void mmio_write32(uint32_t addr, uint32_t v);
+ // ---- memory ------------------------------------------------------------
+ static inline bool ppc_is_mmio(uint32_t a) { return (a & 0xFE000000u) == 0xCC000000u; }
+ 
+-static inline uint8_t ld8(uint8_t* m, uint32_t a) {
++static PPC_FORCEINLINE uint8_t ld8(uint8_t* m, uint32_t a) {
+     if (PPC_UNLIKELY(ppc_is_mmio(a))) return mmio_read8(a);
+     return m[a];
+ }
+-static inline uint32_t ld16(uint8_t* m, uint32_t a) {
++static PPC_FORCEINLINE uint32_t ld16(uint8_t* m, uint32_t a) {
+     if (PPC_UNLIKELY(ppc_is_mmio(a))) return mmio_read16(a);
+     uint16_t v;
+     std::memcpy(&v, m + a, 2);
+     return PPC_BSWAP16(v);
+ }
+-static inline uint32_t lds16(uint8_t* m, uint32_t a) { return (uint32_t)(int32_t)(int16_t)ld16(m, a); }
+-static inline uint32_t ld32(uint8_t* m, uint32_t a) {
++static PPC_FORCEINLINE uint32_t lds16(uint8_t* m, uint32_t a) { return (uint32_t)(int32_t)(int16_t)ld16(m, a); }
++static PPC_FORCEINLINE uint32_t ld32(uint8_t* m, uint32_t a) {
+     if (PPC_UNLIKELY(ppc_is_mmio(a))) return mmio_read32(a);
+     uint32_t v;
+     std::memcpy(&v, m + a, 4);
+     return PPC_BSWAP32(v);
+ }
+-static inline uint64_t ld64(uint8_t* m, uint32_t a) {
++static PPC_FORCEINLINE uint64_t ld64(uint8_t* m, uint32_t a) {
+     if (PPC_UNLIKELY(ppc_is_mmio(a))) return ((uint64_t)mmio_read32(a) << 32) | mmio_read32(a + 4);
+     uint64_t v;
+     std::memcpy(&v, m + a, 8);
+     return PPC_BSWAP64(v);
+ }
+-static inline void st8(uint8_t* m, uint32_t a, uint32_t v) {
++static PPC_FORCEINLINE void st8(uint8_t* m, uint32_t a, uint32_t v) {
+     if (PPC_UNLIKELY(ppc_is_mmio(a))) { mmio_write8(a, (uint8_t)v); return; }
+-    m[a] = (uint8_t)v;
++    m[a] = (uint8_t)v;native_memory_written(a,1);
+ }
+-static inline void st16(uint8_t* m, uint32_t a, uint32_t v) {
++static PPC_FORCEINLINE void st16(uint8_t* m, uint32_t a, uint32_t v) {
+     if (PPC_UNLIKELY(ppc_is_mmio(a))) { mmio_write16(a, (uint16_t)v); return; }
+     uint16_t s = PPC_BSWAP16((uint16_t)v);
+-    std::memcpy(m + a, &s, 2);
++    std::memcpy(m + a, &s, 2);native_memory_written(a,2);
+ }
+-static inline void st32(uint8_t* m, uint32_t a, uint32_t v) {
++static PPC_FORCEINLINE void st32(uint8_t* m, uint32_t a, uint32_t v) {
+     if (PPC_UNLIKELY(ppc_is_mmio(a))) { mmio_write32(a, v); return; }
+     uint32_t s = PPC_BSWAP32(v);
+-    std::memcpy(m + a, &s, 4);
++    std::memcpy(m + a, &s, 4);native_memory_written(a,4);
+ }
+-static inline void st64(uint8_t* m, uint32_t a, uint64_t v) {
++static PPC_FORCEINLINE void st64(uint8_t* m, uint32_t a, uint64_t v) {
+     if (PPC_UNLIKELY(ppc_is_mmio(a))) { mmio_write32(a, (uint32_t)(v >> 32)); mmio_write32(a + 4, (uint32_t)v); return; }
+     uint64_t s = PPC_BSWAP64(v);
+-    std::memcpy(m + a, &s, 8);
++    std::memcpy(m + a, &s, 8);native_memory_written(a,8);
+ }
+ // byte-reversed forms: guest little-endian = host order
+-static inline uint32_t ld32le(uint8_t* m, uint32_t a) { return PPC_BSWAP32(ld32(m, a)); }
+-static inline uint32_t ld16le(uint8_t* m, uint32_t a) { return PPC_BSWAP16((uint16_t)ld16(m, a)); }
+-static inline void st32le(uint8_t* m, uint32_t a, uint32_t v) { st32(m, a, PPC_BSWAP32(v)); }
+-static inline void st16le(uint8_t* m, uint32_t a, uint32_t v) { st16(m, a, PPC_BSWAP16((uint16_t)v)); }
++static PPC_FORCEINLINE uint32_t ld32le(uint8_t* m, uint32_t a) { return PPC_BSWAP32(ld32(m, a)); }
++static PPC_FORCEINLINE uint32_t ld16le(uint8_t* m, uint32_t a) { return PPC_BSWAP16((uint16_t)ld16(m, a)); }
++static PPC_FORCEINLINE void st32le(uint8_t* m, uint32_t a, uint32_t v) { st32(m, a, PPC_BSWAP32(v)); }
++static PPC_FORCEINLINE void st16le(uint8_t* m, uint32_t a, uint32_t v) { st16(m, a, PPC_BSWAP16((uint16_t)v)); }
+ 
+-static inline float ldf32(uint8_t* m, uint32_t a) {
++static PPC_FORCEINLINE float ldf32(uint8_t* m, uint32_t a) {
+     uint32_t u = ld32(m, a);
+     float f;
+     std::memcpy(&f, &u, 4);
+     return f;
+ }
+-static inline void stf32(uint8_t* m, uint32_t a, float f) {
++static PPC_FORCEINLINE void stf32(uint8_t* m, uint32_t a, float f) {
+     uint32_t u;
+     std::memcpy(&u, &f, 4);
+     st32(m, a, u);
+ }
+ 
+-static inline void ppc_dcbz(uint8_t* m, uint32_t a) { std::memset(m + (a & ~31u), 0, 32); }
++static PPC_FORCEINLINE void ppc_dcbz(uint8_t* m, uint32_t a) { std::memset(m + (a & ~31u), 0, 32);native_memory_written(a&~31u,32); }
+ 
+ // ---- condition register ------------------------------------------------
+ static inline uint32_t cr_bit(const PPCContext& c, int bi) { return (c.cr >> (31 - bi)) & 1; }
+@@ -187,7 +206,7 @@ static inline void cr_cmp_s(PPCContext& c, int f, int32_t a, int32_t b) {
+ static inline void cr_cmp_u(PPCContext& c, int f, uint32_t a, uint32_t b) {
+     cr_set_field(c, f, (a < b ? 8 : a > b ? 4 : 2) | (c.so & 1));
+ }
+-static inline void cr_cmp_f(PPCContext& c, int f, double a, double b) {
++static PPC_FORCEINLINE void cr_cmp_f(PPCContext& c, int f, double a, double b) {
+     uint32_t n = std::isnan(a) || std::isnan(b) ? 1 : a < b ? 8 : a > b ? 4 : 2;
+     cr_set_field(c, f, n);
+     c.fpscr = (c.fpscr & ~0xF000u) | (n << 12);  // FPCC
+@@ -255,7 +274,11 @@ static inline uint64_t ppc_fctiw_impl(double b, int mode) {
+         else if (t <= -2147483648.0) r = INT32_MIN;
+         else r = (int32_t)t;
+     }
+-    return 0xFFF8000000000000ull | (uint32_t)r;
++    // Broadway retains the input sign as bit32 when conversion produces0.
++    // Dolphin Interpreter_FloatingPoint.cpp, pinned409881c, HW-tested marker.
++    uint64_t encoded = 0xFFF8000000000000ull | (uint32_t)r;
++    if(r==0&&std::signbit(b))encoded|=uint64_t(1)<<32;
++    return encoded;
+ }
+ static inline uint64_t ppc_fctiwz(PPCContext&, double b) { return ppc_fctiw_impl(b, 1); }
+ static inline uint64_t ppc_fctiw(PPCContext& c, double b) { return ppc_fctiw_impl(b, c.fpscr & 3); }
+@@ -268,7 +291,7 @@ static inline void ppc_mtfsf(PPCContext& c, uint32_t fm, uint32_t v) {
+ 
+ // ---- Gekko quantized load/store (psq_l / psq_st) ------------------------
+ static inline double ppc_dequant(uint8_t* m, uint32_t ea, uint32_t type, int scale) {
+-    double f = std::ldexp(1.0, -scale);
++    double f = ppc_quant_factor(-scale);
+     switch (type) {
+         case 4: return ld8(m, ea) * f;
+         case 5: return ld16(m, ea) * f;
+@@ -278,7 +301,7 @@ static inline double ppc_dequant(uint8_t* m, uint32_t ea, uint32_t type, int sca
+     }
+ }
+ static inline void ppc_quant(uint8_t* m, uint32_t ea, uint32_t type, int scale, double v) {
+-    double s = v * std::ldexp(1.0, scale);
++    double s = v * ppc_quant_factor(scale);
+     auto clamp = [](double x, double lo, double hi) { return x < lo ? lo : x > hi ? hi : x; };
+     switch (type) {
+         case 4: st8(m, ea, (uint32_t)clamp(s, 0, 255)); break;
+diff --git a/port/runtime/cpu/ppc_memory.cpp b/port/runtime/cpu/ppc_memory.cpp
+index cabdf30..ef7dd51 100644
+--- a/port/runtime/cpu/ppc_memory.cpp
++++ b/port/runtime/cpu/ppc_memory.cpp
+@@ -1,4 +1,6 @@
+ #include "ppc_memory.h"
++#include "native_dirty.h"
++#include "native_config.h"
+ 
+ #include <cstring>
+ #include <initializer_list>
+@@ -30,7 +32,8 @@ uint8_t* ppc_memory_init() {
+     // Find a free 4 GB window, release it, then map our views into it.
+     // Another thread could grab part of it in between, so retry a few times.
+     for (int attempt = 0; attempt < 16; attempt++) {
+-        void* p = VirtualAlloc(nullptr, 0x100000000ull, MEM_RESERVE, PAGE_NOACCESS);
++        bool fixed=native_config_get("MW_TEST_SNAPSHOT_WRITE")||native_config_get("MW_TEST_SNAPSHOT_READ");
++        void* p = VirtualAlloc(fixed?reinterpret_cast<void*>(0x20000000000ull):nullptr, 0x100000000ull, MEM_RESERVE, PAGE_NOACCESS);
+         if (!p) return nullptr;
+         VirtualFree(p, 0, MEM_RELEASE);
+         g_base = (uint8_t*)p;
+@@ -66,7 +69,7 @@ uint32_t ppc_load_dol(uint8_t* m, const uint8_t* dol, size_t size) {
+         uint32_t off = be32(i * 4), addr = be32(0x48 + i * 4), sz = be32(0x90 + i * 4);
+         if (!sz) continue;
+         if ((size_t)off + sz > size) return 0;
+-        std::memcpy(m + addr, dol + off, sz);
++        std::memcpy(m + addr, dol + off, sz);native_memory_written(addr,sz);
+     }
+     // .bss needs no clearing: freshly mapped guest memory is zero.
+     return be32(0xE0);
+diff --git a/port/runtime/cpu/ppc_runtime.cpp b/port/runtime/cpu/ppc_runtime.cpp
+index aba3dfb..c8ff372 100644
+--- a/port/runtime/cpu/ppc_runtime.cpp
++++ b/port/runtime/cpu/ppc_runtime.cpp
+@@ -1,6 +1,10 @@
+ // Default runtime services for recompiled code: indirect calls, SPRs, traps,
+ // and crash reporting with the guest call stack.
+ #include "ppc_runtime.h"
++#include "native_config.h"
++#include "os.h"
++#include "rso.h"
++#include "embed_host.h"
+ 
+ #include <algorithm>
+ #include <chrono>
+@@ -11,9 +15,22 @@
+ namespace {
+ PPCTrace g_main_trace;
+ }
++bool g_ppc_poll_enabled=false;
++uint32_t g_ppc_poll_calls=0,g_ppc_poll_host=0;
+ PPCTrace* g_ppc_trace = &g_main_trace;
++PPCContext* g_ppc_context_for_debug=nullptr;
++
++void ppc_enable_interrupt_polling() {g_ppc_poll_enabled=true;}
++void ppc_reset_debug_context(){g_ppc_poll_enabled=false;g_main_trace.depth=0;g_ppc_trace=&g_main_trace;g_ppc_context_for_debug=nullptr;}
++void ppc_poll_slow(PPCContext& c,uint8_t* m,bool deliver) {
++    native_host_poll();
++    mw_rso_attach(m);
++    if(deliver)os_deliver_interrupts(c,m);
++    g_ppc_context_for_debug=&c;
++}
+ 
+ const char* ppc_func_name(uint32_t addr, uint32_t* start) {
++    if (const char* name = mw_rso_func_name(addr, start)) return name;
+     const PPCFuncName* begin = g_ppc_func_names;
+     const PPCFuncName* end = g_ppc_func_names + g_ppc_func_name_count;
+     auto it = std::upper_bound(begin, end, addr, [](uint32_t a, const PPCFuncName& e) { return a < e.addr; });
+@@ -37,6 +54,7 @@ void ppc_print_guest_stack(FILE* out) {
+ [[noreturn]] void ppc_fatal(const char* fmt, ...) {
+     va_list ap;
+     va_start(ap, fmt);
++    char message[1024];va_list copy;va_copy(copy,ap);std::vsnprintf(message,sizeof message,fmt,copy);va_end(copy);
+     std::fprintf(stderr, "[ppc] fatal: ");
+     std::vfprintf(stderr, fmt, ap);
+     std::fprintf(stderr, "\n");
+@@ -44,31 +62,65 @@ void ppc_print_guest_stack(FILE* out) {
+     ppc_print_guest_stack(stderr);
+     std::fflush(stderr);
+     std::fflush(stdout);
++    native_host_fail(message);
+     std::_Exit(1);
+ }
+ 
++PPCFunc native_frame_record_observe(uint32_t addr, PPCFunc fn);
+ PPCFunc ppc_lookup(uint32_t addr) {
++    // Indirect calls (every guest virtual call) searched ~26k entries, then the RSO
++    // table on a miss. A direct-mapped cache returns the same function; RSO entries
++    // depend on the module's load base, so the base is part of the key.
++    struct Slot { uint32_t addr, rso_base; PPCFunc fn; };
++    static Slot cache[8192];
++    const uint32_t rso_base = mw_rso_current_base();
++    Slot& slot = cache[(addr >> 2) & 8191];
++    if (slot.fn && slot.addr == addr && slot.rso_base == rso_base) return slot.fn;
+     const PPCFuncEntry* begin = g_ppc_funcs;
+     const PPCFuncEntry* end = g_ppc_funcs + g_ppc_func_count;
+     auto it = std::lower_bound(begin, end, addr, [](const PPCFuncEntry& e, uint32_t a) { return e.addr < a; });
+-    return (it != end && it->addr == addr) ? it->fn : nullptr;
++    PPCFunc fn = (it != end && it->addr == addr) ? it->fn : mw_rso_lookup(addr);
++    if (fn) fn = native_frame_record_observe(addr, fn);  // game/frame_record.cpp, default off
++    if (fn) slot = {addr, rso_base, fn};
++    return fn;
+ }
+ 
+ void ppc_call_indirect(PPCContext& c, uint8_t* m, uint32_t addr) {
+     PPCFunc fn = ppc_lookup(addr);
+-    if (!fn) ppc_fatal("indirect call to 0x%08X has no recompiled function (lr=0x%08X)", addr, c.lr);
++    if (!fn) ppc_fatal("indirect call to 0x%08X has no recompiled function (lr=0x%08X rso-base=0x%08X canonical=0x%08X)", addr, c.lr, mw_rso_base(m), mw_rso_canonical_pc(m, addr));
+     fn(c, m);
+ }
+ 
+ uint32_t ppc_mfspr(PPCContext& c, uint32_t spr) { return c.spr[spr & 1023]; }
+ void ppc_mtspr(PPCContext& c, uint8_t*, uint32_t spr, uint32_t value) { c.spr[spr & 1023] = value; }
+ 
++// Test-only guest clock acceleration: MW_TEST_TIME_SCALE=N (1..16) makes the
++// guest time base, and therefore every timebase-driven device model, advance N
++// times faster than the host clock. Default 1 (original rate). Not for play.
++unsigned ppc_test_time_scale() {
++    static const unsigned scale = [] {
++        const char* v = native_config_get("MW_TEST_TIME_SCALE");
++        if (!v) return 1u;
++        char* end = nullptr; unsigned long n = std::strtoul(v, &end, 10);
++        if (!end || *end || n < 1 || n > 16) ppc_fatal("MW_TEST_TIME_SCALE must be an integer 1..16");
++        return (unsigned)n;
++    }();
++    return scale;
++}
++
++namespace { auto tb_origin=std::chrono::steady_clock::now();uint64_t tb_offset=0; }
++bool ppc_bench_unthrottled() {
++    static const bool on = [] { const char* v = native_config_get("MW_BENCH_UNTHROTTLED"); return v && v[0] == '1' && !v[1]; }();
++    return on;
++}
++void ppc_skip_timebase(uint64_t ticks) { tb_offset += ticks; }
++void ppc_set_timebase(uint64_t tb){tb_origin=std::chrono::steady_clock::now();tb_offset=tb;}
+ uint64_t ppc_timebase() {
+     // Wii time base runs at bus clock / 4 = 60.75 MHz.
+     using namespace std::chrono;
+-    static const auto start = steady_clock::now();
+-    uint64_t ns = (uint64_t)duration_cast<nanoseconds>(steady_clock::now() - start).count();
+-    return ns * 243 / 4000;
++
++    uint64_t ns = (uint64_t)duration_cast<nanoseconds>(steady_clock::now() - tb_origin).count();
++    return tb_offset + ns * ppc_test_time_scale() * 243 / 4000;
+ }
+ 
+ uint32_t ppc_mftb(PPCContext&, uint32_t tbr) {
+@@ -103,3 +155,6 @@ void ppc_fell_off(PPCContext&, uint32_t addr) { ppc_fatal("execution ran past th
+ void ppc_unimplemented(PPCContext&, uint32_t addr, const char* what) {
+     ppc_fatal("unimplemented instruction '%s' at 0x%08X", what, addr);
+ }
++
++#include "snapshot.h"
++void native_cpu_state(StateArchive& ar){ar.pod(g_ppc_poll_enabled);ar.pod(g_ppc_poll_calls);}
+diff --git a/port/runtime/cpu/ppc_runtime.h b/port/runtime/cpu/ppc_runtime.h
+index 941ce9b..ac6e7f0 100644
+--- a/port/runtime/cpu/ppc_runtime.h
++++ b/port/runtime/cpu/ppc_runtime.h
+@@ -10,3 +10,4 @@ PPCFunc ppc_lookup(uint32_t addr);
+ const char* ppc_func_name(uint32_t addr, uint32_t* start = nullptr);
+ void ppc_print_guest_stack(FILE* out);
+ uint64_t ppc_timebase();  // 60.75 MHz ticks since start
++unsigned ppc_test_time_scale();  // MW_TEST_TIME_SCALE (1..16), test-only guest clock acceleration; 1 = original
+diff --git a/port/runtime/hw/exi.cpp b/port/runtime/hw/exi.cpp
+index b860d83..cdc9060 100644
+--- a/port/runtime/hw/exi.cpp
++++ b/port/runtime/hw/exi.cpp
+@@ -162,3 +162,6 @@ void exi_write(uint32_t a, uint32_t v, int) {
+ }  // namespace
+ 
+ MMIO_DEVICE(exi) { mmio_register(EXI_BASE, 0x40, exi_read, exi_write); }
++
++#include "snapshot.h"
++void native_exi_state(StateArchive& ar){ar.pod(g_ch);ar.pod(g_rtc);}
+diff --git a/port/runtime/hw/mmio.cpp b/port/runtime/hw/mmio.cpp
+index d3295bb..698c8d2 100644
+--- a/port/runtime/hw/mmio.cpp
++++ b/port/runtime/hw/mmio.cpp
+@@ -5,6 +5,7 @@
+ // return the last value written (0 initially), and the first access to each
+ // address is logged so missing devices are easy to spot.
+ #include "mmio.h"
++#include "os.h"
+ 
+ #include <cstdio>
+ #include <unordered_map>
+@@ -58,6 +59,7 @@ uint32_t mmio_reg_get(uint32_t a) {
+ void mmio_reg_set(uint32_t a, uint32_t v) { g_regs[a & ~3u] = v; }
+ 
+ static uint32_t do_read(uint32_t a, int size) {
++    os_poll_hardware_events();
+     if (const Device* d = find(a)) return d->read(a, size);
+     uint32_t w = mmio_reg_get(a);
+     uint32_t v = size == 4 ? w : size == 2 ? (w >> ((a & 2) ? 0 : 16)) & 0xFFFF : (w >> (24 - 8 * (a & 3))) & 0xFF;
+@@ -101,3 +103,11 @@ MMIODeviceInit::MMIODeviceInit(Fn fn) { device_inits().push_back(fn); }
+ void mmio_init_devices() {
+     for (MMIODeviceInit::Fn fn : device_inits()) fn();
+ }
++
++#include "snapshot.h"
++void native_mmio_state(StateArchive& ar){
++    struct Register{uint32_t address,value;};std::vector<Register> values;
++    if(!ar.reading)for(const auto& [a,v]:g_regs)values.push_back({a,v});
++    ar.vector(values,65536);
++    if(ar.reading){g_regs.clear();g_seen.clear();for(const auto& r:values){if(g_regs.contains(r.address))throw std::runtime_error("Duplicate fallback MMIO register");g_regs[r.address]=r.value;}}
++}
+diff --git a/port/runtime/hw/vi.cpp b/port/runtime/hw/vi.cpp
+index b89286b..baa1f46 100644
+--- a/port/runtime/hw/vi.cpp
++++ b/port/runtime/hw/vi.cpp
+@@ -8,6 +8,7 @@
+ 
+ #include "mmio.h"
+ #include "os.h"
++#include "platform.h"
+ 
+ namespace {
+ constexpr uint32_t VI_BASE = 0xCC002000u;
+@@ -29,7 +30,7 @@ void update_line() {
+     pi_set_cause(PI_INT_VI, irq);
+ }
+ 
+-void retrace() {
++void retrace(const OSEventData&) {
+     g_field++;
+     for (int n = 0; n < 4; n++)
+         if (di(n) & (1u << 28)) g_regs[(0x30 + 4 * n) / 2] |= 0x8000;  // status (bit 31)
+@@ -37,7 +38,7 @@ void retrace() {
+     g_next_field += FIELD_TB;
+     uint64_t now = ppc_timebase();
+     if (g_next_field < now) g_next_field = now + FIELD_TB;  // don't try to catch up after stalls
+-    os_schedule(g_next_field, retrace);
++    os_schedule(g_next_field, {OSEventKind::Vi});
+ }
+ 
+ uint32_t vi_read(uint32_t a, int size) {
+@@ -54,6 +55,7 @@ uint32_t vi_read(uint32_t a, int size) {
+ }
+ 
+ void vi_write(uint32_t a, uint32_t v, int size) {
++    native_platform_vi_write(a,v,size);
+     uint32_t off = a & 0xFF;
+     if (size == 4) {
+         g_regs[off / 2] = (uint16_t)(v >> 16);
+@@ -69,7 +71,13 @@ void vi_write(uint32_t a, uint32_t v, int size) {
+ }  // namespace
+ 
+ MMIO_DEVICE(vi) {
++    os_register_event(OSEventKind::Vi, retrace);
+     mmio_register(VI_BASE, 0x100, vi_read, vi_write);
+     g_next_field = ppc_timebase() + FIELD_TB;
+-    os_schedule(g_next_field, retrace);
++    os_schedule(g_next_field, {OSEventKind::Vi});
+ }
++
++#include "snapshot.h"
++// Next scheduled retrace (timebase ticks); frame-rate wait HLE uses it to stop sleeping in time.
++uint64_t vi_next_retrace_tb(){return g_next_field;}
++void native_vi_state(StateArchive& ar){ar.pod(g_regs);ar.pod(g_next_field);ar.pod(g_field);}
+diff --git a/port/runtime/ios/di.cpp b/port/runtime/ios/di.cpp
+index e64cee8..2f3254a 100644
+--- a/port/runtime/ios/di.cpp
++++ b/port/runtime/ios/di.cpp
+@@ -1,3 +1,4 @@
++#include "native_config.h"
+ // /dev/di: the disc drive, backed by the extracted data partition (orig/RZZE8P/disc).
+ //
+ // Partition reads use offsets inside the decrypted data partition. They're served
+@@ -6,10 +7,14 @@
+ // files/. Bytes no file covers read as zero.
+ #include <algorithm>
+ #include <cstdio>
++#include <cstdlib>
+ #include <vector>
+ 
+ #include "ios.h"
+ #include "mmio.h"
++#include "os.h"
++#include "di_transfer.h"
++#include "pc_ui_overlay.h"
+ 
+ std::string g_disc_dir;  // .../orig/RZZE8P/disc
+ 
+@@ -17,6 +22,7 @@ namespace {
+ // DI result codes
+ constexpr int32_t DI_SUCCESS = 1;
+ constexpr int32_t DI_DRIVE_ERROR = 2;
++DITransferQueue transfer_queue;
+ 
+ uint8_t* mem() { return g_mem; }
+ 
+@@ -76,7 +82,19 @@ public:
+             std::string name = names + (be32(e) & 0xFFFFFF);
+             std::string path = dirs.back().second + "/" + name;
+             if (e[0]) dirs.push_back({be32(e + 8), path});
+-            else extents_.push_back({(uint64_t)be32(e + 4) << 2, be32(e + 8), g_disc_dir + "/files" + path});
++            else {
++                std::string source = g_disc_dir + "/files" + path;
++                if (path == "/etc/core_us.idd") {
++                    const char* overlay = native_config_get("MW_PC_UI_FILE");
++                    if (!select_pc_ui_archive(overlay, be32(e + 8), source)) {
++                        std::fprintf(stderr, "[di] PC prompt resource missing or wrong size\n");
++                        extents_.clear();
++                        return false;
++                    }
++                    if (overlay && *overlay) std::fprintf(stderr, "[di] PC prompts: %s (%u bytes)\n", source.c_str(), be32(e + 8));
++                }
++                extents_.push_back({(uint64_t)be32(e + 4) << 2, be32(e + 8), source});
++            }
+         }
+         std::sort(extents_.begin(), extents_.end(), [](const Extent& a, const Extent& b) { return a.offset < b.offset; });
+         std::fprintf(stderr, "[di] data partition: %zu extents\n", extents_.size());
+@@ -84,7 +102,8 @@ public:
+     }
+ 
+     // Copies [offset, offset+len) of the partition to guest memory.
+-    void read(uint64_t offset, uint32_t len, uint32_t dst) {
++    bool read(uint64_t offset, uint32_t len, uint32_t dst) {
++        bool success=true;
+         uint8_t* m = mem();
+         for (uint32_t i = 0; i < len; i++) st8(m, dst + i, 0);
+         auto it = std::upper_bound(extents_.begin(), extents_.end(), offset,
+@@ -95,13 +114,16 @@ public:
+             uint64_t lo = std::max(offset, it->offset), hi = std::min(offset + len, it->offset + it->size);
+             if (lo >= hi) continue;
+             std::FILE* f = std::fopen(it->path.c_str(), "rb");
+-            if (!f) continue;
++            if (!f) {std::fprintf(stderr,"[di] missing extracted file %s\n",it->path.c_str());success=false;continue;}
+             buf.resize(hi - lo);
+             _fseeki64(f, (int64_t)(lo - it->offset), SEEK_SET);
+             size_t n = std::fread(buf.data(), 1, buf.size(), f);
+             std::fclose(f);
++            if(n!=buf.size()){std::fprintf(stderr,"[di] short read %s: %zu/%zu\n",it->path.c_str(),n,buf.size());success=false;}
++            if(NATIVE_OPTION("MW_TRACE_DI"))std::fprintf(stderr,"[di] read %s +%llx len=%zu dst=%08x\n",it->path.c_str(),lo-it->offset,n,dst+(uint32_t)(lo-offset));
+             for (size_t k = 0; k < n; k++) st8(m, dst + (uint32_t)(lo - offset + k), buf[k]);
+         }
++        return success;
+     }
+ 
+     const std::vector<uint8_t>& disc_id() const { return disc_id_; }
+@@ -116,11 +138,16 @@ Partition& partition() {
+     return p;
+ }
+ 
++void complete_read(const OSEventData& event) {
++    int32_t result = partition().read(event.value,event.b,event.c) ? DI_SUCCESS : DI_DRIVE_ERROR;
++    ios_reply(event.a,result);
++}
++
+ class DevDi : public IOSDevice {
+ public:
+     int32_t open(const std::string&, uint32_t) override { return partition().load() ? IPC_SUCCESS : IPC_ENOENT; }
+ 
+-    int32_t ioctl(const IOSRequest&, uint32_t cmd, uint32_t in, uint32_t, uint32_t out, uint32_t out_len) override {
++    int32_t ioctl(const IOSRequest& request, uint32_t cmd, uint32_t in, uint32_t, uint32_t out, uint32_t out_len) override {
+         uint8_t* m = mem();
+         auto zero_out = [&] {
+             for (uint32_t i = 0; i < out_len; i++) st8(m, out + i, 0);
+@@ -140,8 +167,10 @@ public:
+                 uint32_t len = ld32(m, in + 4);
+                 uint64_t off = (uint64_t)ld32(m, in + 8) << 2;
+                 if (len > out_len) return DI_DRIVE_ERROR;
+-                partition().read(off, len, out);
+-                return DI_SUCCESS;
++                uint32_t reply = request.addr;
++                uint64_t deadline = transfer_queue.submit(ppc_timebase(), len);
++                os_schedule(deadline, {OSEventKind::DiRead,reply,len,out,off});
++                return IPC_PENDING;
+             }
+             case 0x8D: {  // UnencryptedRead: raw disc area (header, partition table, region)
+                 uint32_t len = ld32(m, in + 4);
+@@ -191,9 +220,13 @@ public:
+ 
+ struct RegisterDi {
+     RegisterDi() {
++        os_register_event(OSEventKind::DiRead, complete_read);
+         ios_register("/dev/di", [](const std::string&) -> std::unique_ptr<IOSDevice> {
+             return std::make_unique<DevDi>();
+         });
+     }
+ } g_register_di;
+ }  // namespace
++
++#include "snapshot.h"
++void native_di_state(StateArchive& ar){ar.pod(transfer_queue);if(ar.reading&&!partition().load())throw std::runtime_error("Snapshot partition unavailable");}
+diff --git a/port/runtime/ios/fs.cpp b/port/runtime/ios/fs.cpp
+index b32069a..1bfb93a 100644
+--- a/port/runtime/ios/fs.cpp
++++ b/port/runtime/ios/fs.cpp
+@@ -1,3 +1,4 @@
++#include "native_config.h"
+ // NAND file system: /dev/fs (ISFS ioctls) and NAND file paths ("/shared2/...", "/title/...").
+ //
+ // The NAND lives in a host folder (port/user/nand by default, MW_USER_DIR overrides
+@@ -25,12 +26,12 @@ uint8_t* mem() { return g_mem; }
+ 
+ fs::path nand_root() {
+     static fs::path root = [] {
+-        const char* user = std::getenv("MW_USER_DIR");
++        const char* user = native_config_get("MW_USER_DIR");
+         fs::path r = fs::path(user ? user : "port/user") / "nand";
+         std::error_code ec;
+         fs::create_directories(r, ec);
+         // Seed from Dolphin's NAND on first run.
+-        if (const char* home = std::getenv("USERPROFILE")) {
++        if (const char* home = native_config_get("USERPROFILE")) {
+             fs::path dolphin = fs::path(home) / "Documents" / "Dolphin Emulator" / "Wii";
+             for (const char* rel : {"shared2/sys/SYSCONF", "title/00000001/00000002/data/setting.txt"}) {
+                 fs::path src = dolphin / rel, dst = r / rel;
+@@ -49,7 +50,10 @@ fs::path nand_root() {
+ // NAND path ("/shared2/sys/SYSCONF") -> host path. Rejects escapes out of the root.
+ bool host_path(const std::string& nand, fs::path* out) {
+     if (nand.empty() || nand[0] != '/' || nand.find("..") != std::string::npos) return false;
+-    *out = nand_root() / nand.substr(1);
++    // Rust's canonical user directory can carry the Windows extended-path
++    // prefix. Those paths do not accept Wii '/' separators in fopen; normalize
++    // the complete host path after appending the NAND-relative components.
++    *out = (nand_root() / nand.substr(1)).make_preferred();
+     return true;
+ }
+ 
+@@ -72,6 +76,11 @@ public:
+         return IPC_SUCCESS;
+     }
+     ~NandFile() override { close(); }
++    void snapshot_state(StateArchive& ar) override {
++        int64_t position=ar.reading?0:_ftelli64(f_);ar.pod(mode_);ar.pod(position);
++        if(position<0)throw std::runtime_error("Snapshot NAND file position");
++        if(ar.reading){if(open(name,mode_)<0||_fseeki64(f_,position,SEEK_SET))throw std::runtime_error("Cannot reopen snapshot NAND file");}
++    }
+     int32_t read(uint32_t buf, uint32_t len) override {
+         if (!(mode_ & 1)) return -102;
+         std::vector<uint8_t> tmp(len);
+@@ -122,6 +131,15 @@ public:
+         uint8_t* m = mem();
+         std::error_code ec;
+         fs::path p;
++        // Bounded diagnostics for original NAND request layouts. The SDK's
++        // creation buffer must be observed before assuming GetAttr's layout.
++        static unsigned create_traces = 0;
++        const bool trace_request = (cmd == 3 || cmd == 9 || cmd == 7 || cmd == 8) && NATIVE_OPTION("MW_TRACE_NAND") && create_traces++ < 64;
++        if (trace_request) {
++            std::fprintf(stderr, "[fs-create] cmd=%u in=%08x bytes=%u payload=", cmd, in, in_len);
++            for (uint32_t i = 0; i < in_len && i < 96; ++i) std::fprintf(stderr, "%02x", ld8(m, in+i));
++            std::fprintf(stderr, "\n");
++        }
+         switch (cmd) {
+             case 0x02:  // GetStats
+                 for (uint32_t i = 0; i + 4 <= out_len && i < 0x1C; i += 4) st32(m, out + i, 0);
+@@ -149,6 +167,7 @@ public:
+             }
+             case 0x07:  // Delete(path)
+                 if (!host_path(read_path(in), &p)) return FS_EINVAL;
++                if (trace_request) std::fprintf(stderr,"[fs-delete] path=%s\n",p.string().c_str());
+                 if (!fs::exists(p)) return FS_ENOENT;
+                 fs::remove_all(p, ec);
+                 return ec ? FS_EIO : IPC_SUCCESS;
+@@ -163,9 +182,11 @@ public:
+             }
+             case 0x09: {  // CreateFile(attr)
+                 if (!host_path(read_path(in + ATTR_PATH), &p)) return FS_EINVAL;
++                if (trace_request) std::fprintf(stderr,"[fs-create-file] path=%s exists=%d\n",p.string().c_str(),int(fs::exists(p)));
+                 if (fs::exists(p)) return FS_EEXIST;
+                 fs::create_directories(p.parent_path(), ec);
+                 FILE* f = std::fopen(p.string().c_str(), "wb");
++                if (trace_request) std::fprintf(stderr,"[fs-create-file] opened=%d error=%s\n",int(f!=nullptr),ec.message().c_str());
+                 if (!f) return FS_EIO;
+                 std::fclose(f);
+                 return IPC_SUCCESS;
+diff --git a/port/runtime/ios/ios.cpp b/port/runtime/ios/ios.cpp
+index 9fa166c..7756c8f 100644
+--- a/port/runtime/ios/ios.cpp
++++ b/port/runtime/ios/ios.cpp
+@@ -1,3 +1,4 @@
++#include "native_config.h"
+ // IOS request dispatch, file descriptors and the device registry.
+ #include "ios.h"
+ 
+@@ -23,7 +24,7 @@ std::vector<Registration>& registry() {
+ 
+ std::map<uint32_t, std::unique_ptr<IOSDevice>> g_fds;
+ uint32_t g_next_fd = 3;
+-bool g_trace = std::getenv("MW_TRACE_IOS") != nullptr;
++bool g_trace = native_config_get("MW_TRACE_IOS") != nullptr;
+ 
+ uint8_t* mem() { return g_mem; }
+ 
+@@ -161,3 +162,15 @@ struct RegisterSimple {
+     }
+ } g_register_simple;
+ }  // namespace
++
++// Terminal host teardown, while platform code and borrowed guest RAM are live.
++void ios_shutdown_devices(){g_fds.clear();}
++
++void native_ios_state(StateArchive& ar){
++    ar.tag(0x494f5344);ar.pod(g_next_fd);
++    uint64_t count=g_fds.size();ar.pod(count);if(count>256)throw std::runtime_error("Snapshot IOS fd count");
++    if(ar.reading){
++        g_fds.clear();
++        for(uint64_t i=0;i<count;++i){uint32_t fd=0;std::string path;ar.pod(fd);ar.string(path);auto dev=make_device(path);if(!dev||fd<3||fd>=g_next_fd||g_fds.contains(fd))throw std::runtime_error("Snapshot IOS device unavailable");dev->snapshot_state(ar);g_fds.emplace(fd,std::move(dev));}
++    }else for(auto& [fd,dev]:g_fds){uint32_t key=fd;ar.pod(key);ar.string(dev->name);dev->snapshot_state(ar);}
++}
+diff --git a/port/runtime/ios/ios.h b/port/runtime/ios/ios.h
+index b051efb..9f01a94 100644
+--- a/port/runtime/ios/ios.h
++++ b/port/runtime/ios/ios.h
+@@ -11,6 +11,7 @@
+ #include <string>
+ 
+ #include "hle.h"
++#include "snapshot.h"
+ 
+ // IOS error codes
+ constexpr int32_t IPC_SUCCESS = 0;
+@@ -47,6 +48,7 @@ public:
+     virtual int32_t ioctl(const IOSRequest& r, uint32_t cmd, uint32_t in, uint32_t in_len, uint32_t out, uint32_t out_len);
+     virtual int32_t ioctlv(const IOSRequest& r, uint32_t cmd, const IOSVector* in, uint32_t n_in,
+                            const IOSVector* io, uint32_t n_io);
++    virtual void snapshot_state(StateArchive&) {}
+     std::string name;
+ };
+ 
+diff --git a/port/runtime/ios/ipc.cpp b/port/runtime/ios/ipc.cpp
+index e9c264c..f542af8 100644
+--- a/port/runtime/ios/ipc.cpp
++++ b/port/runtime/ios/ipc.cpp
+@@ -1,3 +1,4 @@
++#include "native_config.h"
+ // IPC registers between the PowerPC and IOS (0xCD000000).
+ //
+ //   +0x0 PPCMSG   request address (physical), written by the game
+@@ -21,7 +22,7 @@ constexpr uint32_t X1 = 1, Y2 = 2, Y1 = 4, X2 = 8, IY1 = 0x10, IY2 = 0x20;
+ uint32_t g_ppc_msg = 0, g_arm_msg = 0;
+ uint32_t g_ctrl = 0;
+ std::deque<uint32_t> g_replies;
+-bool g_trace = std::getenv("MW_TRACE_IPC") != nullptr;
++bool g_trace = native_config_get("MW_TRACE_IPC") != nullptr;
+ 
+ void update_irq() {
+     bool irq = ((g_ctrl & Y1) && (g_ctrl & IY1)) || ((g_ctrl & Y2) && (g_ctrl & IY2));
+@@ -37,16 +38,24 @@ void try_send_reply() {
+     g_ctrl |= Y1;
+ }
+ 
++void acknowledge(const OSEventData& event) {
++    g_ctrl&=~X1;g_ctrl|=Y2;
++    ios_execute(event.a);
++    try_send_reply();update_irq();
++}
++
+ void write_ctrl(uint32_t v) {
+     if (g_trace) std::fprintf(stderr, "[ipc] ctrl write 0x%02X (ctrl was 0x%02X)\n", v, g_ctrl);
+     if (v & Y1) g_ctrl &= ~Y1;  // game consumed the reply
+     if (v & Y2) g_ctrl &= ~Y2;  // game saw the acknowledgement
+     g_ctrl = (g_ctrl & ~(IY1 | IY2)) | (v & (IY1 | IY2));
+     if (v & X1) {
+-        // Acknowledge first: a reply produced right away waits until the game has
+-        // handled the ack, matching the order real IOS signals them.
+-        g_ctrl |= Y2;
+-        ios_execute(g_ppc_msg);
++        if(g_ctrl&X1)ppc_fatal("overlapping IOS request before acknowledgement");
++        g_ctrl|=X1;
++        uint32_t request=g_ppc_msg;
++        // Dolphin hardware measurements: ACK takes500 Wii time-base ticks.
++        // Latch the pointer now; a later PPCMSG write cannot change this request.
++        os_schedule(ppc_timebase()+500,{OSEventKind::IpcAck,request});
+     }
+     try_send_reply();
+     update_irq();
+@@ -60,6 +69,7 @@ void ipc_queue_reply(uint32_t req_phys) {
+ }
+ 
+ MMIO_DEVICE(ipc) {
++    os_register_event(OSEventKind::IpcAck, acknowledge);
+     mmio_register(
+         0xCD000000u, 0x10,
+         [](uint32_t a, int) -> uint32_t {
+@@ -78,3 +88,6 @@ MMIO_DEVICE(ipc) {
+             }
+         });
+ }
++
++#include "snapshot.h"
++void native_ipc_state(StateArchive& ar){ar.pod(g_ppc_msg);ar.pod(g_arm_msg);ar.pod(g_ctrl);std::vector<uint32_t> values;if(!ar.reading)values.assign(g_replies.begin(),g_replies.end());ar.vector(values,65536);if(ar.reading)g_replies.assign(values.begin(),values.end());}
+diff --git a/port/runtime/os/boot.cpp b/port/runtime/os/boot.cpp
+index 1635e2f..bd5085d 100644
+--- a/port/runtime/os/boot.cpp
++++ b/port/runtime/os/boot.cpp
+@@ -34,7 +34,7 @@ void wii_setup_lowmem(uint8_t* m) {
+         ppc_fatal("missing boot.bin / bi2.bin / fst.bin in %s", g_sys_dir.c_str());
+ 
+     // 0x80000000: disc ID (game code, maker, disc number, version, streaming)
+-    std::memcpy(m + 0x80000000u, boot.data(), 0x20);
++    std::memcpy(m + 0x80000000u, boot.data(), 0x20);native_memory_written(0x80000000u,uint32_t(0x20));
+     w32(m, 0x80000020u, 0x0D15EA5Eu);   // boot magic: booted from a disc
+     w32(m, 0x80000024u, 0x00000001u);   // version
+     w32(m, 0x80000028u, MEM1_SIZE);      // physical MEM1 size
+@@ -48,9 +48,9 @@ void wii_setup_lowmem(uint8_t* m) {
+     // and lowers ArenaHi below them.
+     uint32_t top = 0x817FE000u;
+     uint32_t fst_addr = (top - (uint32_t)fst.size()) & ~31u;
+-    std::memcpy(m + fst_addr, fst.data(), fst.size());
++    std::memcpy(m + fst_addr, fst.data(), fst.size());native_memory_written(fst_addr,uint32_t(fst.size()));
+     uint32_t bi2_addr = (fst_addr - (uint32_t)bi2.size()) & ~31u;
+-    std::memcpy(m + bi2_addr, bi2.data(), bi2.size());
++    std::memcpy(m + bi2_addr, bi2.data(), bi2.size());native_memory_written(bi2_addr,uint32_t(bi2.size()));
+     w32(m, 0x80000030u, 0);              // ArenaLo: 0 = let OSInit use the linker value
+     w32(m, 0x80000034u, bi2_addr);       // ArenaHi
+     w32(m, 0x80000038u, fst_addr);       // FST location
+@@ -73,5 +73,5 @@ void wii_setup_lowmem(uint8_t* m) {
+     w32(m, 0x80003140u, 0x00240000u | 0x1FFF);  // IOS36, revision 0x1FFF
+     w32(m, 0x80003144u, 0x00062507u);    // IOS build date
+     w32(m, 0x80003188u, 0x00240000u | 0x1FFF);  // IOS version the title asked for
+-    std::memcpy(m + 0x80003180u, boot.data(), 4);  // game code
++    std::memcpy(m + 0x80003180u, boot.data(), 4);native_memory_written(0x80003180u,uint32_t(4));  // game code
+ }
+diff --git a/port/runtime/os/interrupts.cpp b/port/runtime/os/interrupts.cpp
+index 592e81b..f566113 100644
+--- a/port/runtime/os/interrupts.cpp
++++ b/port/runtime/os/interrupts.cpp
+@@ -1,3 +1,4 @@
++#include "native_config.h"
+ // Interrupt delivery: PI / Hollywood interrupt registers, the decrementer, and the
+ // OS's interrupt enable/disable functions.
+ //
+@@ -13,6 +14,10 @@
+ #include <queue>
+ #include <thread>
+ #include <vector>
++#include <array>
++#define WIN32_LEAN_AND_MEAN
++#define NOMINMAX
++#include <windows.h>
+ 
+ #include "hle.h"
+ #include "mmio.h"
+@@ -35,12 +40,13 @@ uint64_t g_dec_deadline = 0;
+ struct Event {
+     uint64_t when;
+     uint64_t seq;
+-    std::function<void()> fn;
++    OSEventData data;
+     bool operator>(const Event& o) const { return when != o.when ? when > o.when : seq > o.seq; }
+ };
+ std::priority_queue<Event, std::vector<Event>, std::greater<Event>> g_events;
+ uint64_t g_event_seq = 0;
+-bool g_trace = std::getenv("MW_TRACE_IRQ") != nullptr;
++std::array<OSEventHandler, size_t(OSEventKind::Count)> g_event_handlers{};
++bool g_trace = native_config_get("MW_TRACE_IRQ") != nullptr;
+ 
+ void update_hollywood_line() {
+     if (g_hw_flags & g_hw_mask) g_pi_cause |= PI_INT_HOLLYWOOD;
+@@ -50,9 +56,11 @@ void update_hollywood_line() {
+ void run_due_events() {
+     uint64_t now = ppc_timebase();
+     while (!g_events.empty() && g_events.top().when <= now) {
+-        std::function<void()> fn = g_events.top().fn;
++        OSEventData data = g_events.top().data;
+         g_events.pop();
+-        fn();
++        auto handler = g_event_handlers.at(size_t(data.kind));
++        if (!handler) ppc_fatal("Unregistered hardware event %u", unsigned(data.kind));
++        handler(data);
+     }
+ }
+ 
+@@ -61,8 +69,9 @@ void call_handler(PPCContext& c, uint8_t* m, uint32_t fn, int exception) {
+     // handler saves every register and OSLoadContext restores them. Here the handler
+     // runs on the interrupted thread's register set and is cut short at OSLoadContext
+     // (skipping its epilogue), so snapshot the whole CPU state and put it back.
+-    static thread_local std::vector<PPCContext> snapshots;
+-    snapshots.push_back(c);
++    // Host fibers share thread_local storage and can resume out of order.
++    // Keep this snapshot on the calling fiber's stack, not a shared LIFO.
++    PPCContext snapshot=c;
+     uint32_t msr = c.msr;
+     uint32_t ctx = ld32(m, CUR_CONTEXT);
+     c.msr &= ~MSR_EE;
+@@ -75,8 +84,7 @@ void call_handler(PPCContext& c, uint8_t* m, uint32_t fn, int exception) {
+         // handler finished with OSLoadContext(ctx): back to the interrupted code
+     }
+     os_irq_pop();
+-    c = snapshots.back();
+-    snapshots.pop_back();
++    c = snapshot;
+     c.msr = msr;
+ }
+ }  // namespace
+@@ -99,9 +107,17 @@ void hollywood_set_irq(uint32_t bits, bool on) {
+     update_hollywood_line();
+ }
+ 
+-void os_schedule(uint64_t when_tb, std::function<void()> fn) {
+-    g_events.push({when_tb, g_event_seq++, std::move(fn)});
++void os_register_event(OSEventKind kind, OSEventHandler handler) {
++    auto& slot = g_event_handlers.at(size_t(kind));
++    if (slot && slot != handler) ppc_fatal("Conflicting hardware event handler");
++    slot = handler;
+ }
++void os_schedule(uint64_t when_tb, OSEventData data) {
++    if (size_t(data.kind) >= g_event_handlers.size() || !g_event_handlers[size_t(data.kind)])
++        ppc_fatal("Unregistered scheduled hardware event");
++    g_events.push({when_tb, g_event_seq++, data});
++}
++void os_poll_hardware_events(){run_due_events();}
+ 
+ void os_deliver_interrupts(PPCContext& c, uint8_t* m) {
+     for (int guard = 0; guard < 64 && (c.msr & MSR_EE); guard++) {
+@@ -127,6 +143,36 @@ void os_deliver_interrupts(PPCContext& c, uint8_t* m) {
+     }
+ }
+ 
++void os_trace_hardware_state() {
++    std::fprintf(stderr,"[idle-irq] cause=%08x mask=%08x hollywood=%08x/%08x dec-armed=%u dec-deadline=%llu now=%llu events=%zu\n",
++        g_pi_cause,g_pi_mask,g_hw_flags,g_hw_mask,g_dec_armed,g_dec_deadline,ppc_timebase(),g_events.size());
++}
++
++// MW_BENCH_UNTHROTTLED=1 (diagnostic only, cpu/ppc_runtime.cpp): idle waits advance the
++// guest time base to the next deadline instead of sleeping.
++bool ppc_bench_unthrottled();
++void ppc_skip_timebase(uint64_t ticks);
++
++namespace {
++// std::this_thread::sleep_for rounds up to whole milliseconds on MSVC (Sleep), and
++// Sleep's granularity follows the global timer resolution (15.6 ms unless some
++// process raised it). A high-resolution waitable timer honours sub-ms deadlines.
++void host_wait_ns(uint64_t ns) {
++    static HANDLE timer = CreateWaitableTimerExW(nullptr, nullptr, 0x00000002 /*CREATE_WAITABLE_TIMER_HIGH_RESOLUTION*/, TIMER_ALL_ACCESS);
++    if (!timer) {
++        std::this_thread::sleep_for(std::chrono::nanoseconds(ns));
++        return;
++    }
++    LARGE_INTEGER due;
++    due.QuadPart = -static_cast<LONGLONG>(std::max<uint64_t>(ns / 100, 1));  // relative, 100 ns units
++    if (!SetWaitableTimer(timer, &due, 0, nullptr, nullptr, FALSE)) {
++        std::this_thread::sleep_for(std::chrono::nanoseconds(ns));
++        return;
++    }
++    WaitForSingleObject(timer, INFINITE);
++}
++}  // namespace
++
+ void os_wait_for_event() {
+     run_due_events();
+     if (g_pi_cause & g_pi_mask) return;
+@@ -134,7 +180,32 @@ void os_wait_for_event() {
+     uint64_t next = now + 60750;  // at most 1 ms
+     if (g_dec_armed) next = std::min(next, g_dec_deadline);
+     if (!g_events.empty()) next = std::min(next, g_events.top().when);
+-    if (next > now) std::this_thread::sleep_for(std::chrono::nanoseconds((next - now) * 4000 / 243));
++    if (next > now && ppc_bench_unthrottled()) {
++        // Benchmark: nothing can run until the next deadline, so skip to it.
++        ppc_skip_timebase(next - now);
++        return;
++    }
++    if (next > now) {
++        // Same test-only MW_TEST_TIME_SCALE as ppc_timebase (validated there); read
++        // locally so the interrupt unit also links in the standalone regression exe.
++        static const uint64_t time_scale=[](){const char* v=native_config_get("MW_TEST_TIME_SCALE");unsigned long n=v?std::strtoul(v,nullptr,10):1;return uint64_t(n>=1&&n<=16?n:1);}();
++        const uint64_t requested=(next-now)*4000/243/time_scale;
++        static const bool profile=[](){const char* v=native_config_get("MW_PROFILE_NATIVE_IO");return v&&v[0]=='1'&&v[1]==0;}();
++        using Clock=std::chrono::steady_clock;
++        static uint64_t calls=0,requested_ns=0,actual_ns=0,max_overshoot=0,over2ms=0,over10ms=0;
++        static auto report=Clock::now();
++        const auto began=profile?Clock::now():Clock::time_point{};
++        host_wait_ns(requested);
++        if(profile){
++            uint64_t actual=uint64_t(std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now()-began).count());
++            uint64_t overshoot=actual>requested?actual-requested:0;
++            ++calls;requested_ns+=requested;actual_ns+=actual;max_overshoot=std::max(max_overshoot,overshoot);over2ms+=overshoot>2000000;over10ms+=overshoot>10000000;
++            if(Clock::now()-report>=std::chrono::seconds(1)){
++                report=Clock::now();
++                std::fprintf(stderr,"NATIVE_WAIT_PROFILE {\"calls\":%llu,\"requestedNs\":%llu,\"actualNs\":%llu,\"maxOvershootNs\":%llu,\"over2ms\":%llu,\"over10ms\":%llu}\n",calls,requested_ns,actual_ns,max_overshoot,over2ms,over10ms);
++            }
++        }
++    }
+ }
+ 
+ // ---- OS functions -------------------------------------------------------
+@@ -195,3 +266,15 @@ MMIO_DEVICE(hollywood_irq) {
+             update_hollywood_line();
+         });
+ }
++
++// Guest fibers are parked; release queued callbacks without executing them.
++void os_clear_hardware_events(){while(!g_events.empty())g_events.pop();}
++
++#include "snapshot.h"
++void os_events_state(StateArchive& ar){
++    ar.tag(0x45564e54);ar.pod(g_pi_cause);ar.pod(g_pi_mask);ar.pod(g_hw_flags);ar.pod(g_hw_level);ar.pod(g_hw_mask);ar.pod(g_dec_armed);ar.pod(g_dec_deadline);ar.pod(g_event_seq);
++    std::vector<Event> events;
++    if(!ar.reading){auto copy=g_events;while(!copy.empty()){events.push_back(copy.top());copy.pop();}}
++    ar.vector(events,65536);
++    if(ar.reading){g_events={};for(const auto& e:events){if(size_t(e.data.kind)>=g_event_handlers.size()||!g_event_handlers[size_t(e.data.kind)]||e.seq>=g_event_seq)throw std::runtime_error("Invalid snapshot hardware event");g_events.push(e);}}
++}
+diff --git a/port/runtime/os/os.h b/port/runtime/os/os.h
+index 6851455..6436528 100644
+--- a/port/runtime/os/os.h
++++ b/port/runtime/os/os.h
+@@ -36,9 +36,22 @@ void pi_set_cause(uint32_t bits, bool on);
+ void hollywood_set_irq(uint32_t bits, bool on);
+ 
+ // Timed host events (in 60.75 MHz time base ticks), run from interrupt delivery.
+-void os_schedule(uint64_t when_tb, std::function<void()> fn);
++enum class OSEventKind : uint32_t { Ai, Dsp, Vi, DiRead, IpcAck, Bluetooth, Count };
++struct OSEventData {
++    OSEventKind kind{};
++    uint32_t a=0,b=0,c=0;
++    uint64_t value=0;
++};
++using OSEventHandler = void (*)(const OSEventData&);
++void os_register_event(OSEventKind, OSEventHandler);
++void os_schedule(uint64_t when_tb, OSEventData);
+ 
+ // Delivers pending interrupts if MSR[EE] allows (runs guest handlers).
+ void os_deliver_interrupts(PPCContext& c, uint8_t* m);
++// Hardware progresses even when the guest masks interrupt delivery.
++void os_poll_hardware_events();
+ // Sleeps until the next scheduled event or decrementer deadline (idle loop).
+ void os_wait_for_event();
++
++// Bounded diagnostic snapshot; called only by explicit MW_TRACE_IDLE.
++void os_trace_hardware_state();
+diff --git a/port/runtime/os/os_audio.cpp b/port/runtime/os/os_audio.cpp
+index 0aefead..1455c4d 100644
+--- a/port/runtime/os/os_audio.cpp
++++ b/port/runtime/os/os_audio.cpp
+@@ -1,10 +1,12 @@
+-// The audio DSP isn't emulated: audio will be replaced at the AX level.
+-// OSInit uploads a small DSP boot program and waits for its mailbox reply;
+-// skip that handshake entirely.
++#include "native_config.h"
++// Original DSP initialization runs when the optional Rust DSP bridge is enabled.
++// Without it retain upstream's headless CPU-only bootstrap behavior.
+ #include "hle.h"
++#include "hle_funcs.h"
++#include <cstdlib>
+ 
+ // void __OSInitAudioSystem(void)
+-PPC_FUNC(f_802FA050) {}
++PPC_FUNC(f_802FA050) {if(native_config_get("MW_PLATFORM_DLL"))f_802FA050_recomp(c,m);}
+ 
+ // void __OSStopAudioSystem(void)
+-PPC_FUNC(f_802FA218) {}
++PPC_FUNC(f_802FA218) {if(native_config_get("MW_PLATFORM_DLL"))f_802FA218_recomp(c,m);}
+diff --git a/port/runtime/os/threads.cpp b/port/runtime/os/threads.cpp
+index 6d746d7..08d5dee 100644
+--- a/port/runtime/os/threads.cpp
++++ b/port/runtime/os/threads.cpp
+@@ -1,3 +1,4 @@
++#include "native_config.h"
+ // Guest threads on host fibers.
+ //
+ // The Wii OS switches threads by saving/loading register contexts (OSSaveContext /
+@@ -14,11 +15,16 @@
+ #include <cstdlib>
+ #include <unordered_map>
+ #include <vector>
++#include <array>
++#include "snapshot.h"
+ 
+ #define WIN32_LEAN_AND_MEAN
+ #include <windows.h>
+ 
+ #include "hle.h"
++#include "embed_host.h"
++#include "host_fiber.h"
++#include <exception>
+ #include "os.h"
+ 
+ namespace {
+@@ -34,13 +40,16 @@ constexpr uint32_t SWITCH_CALLBACK = 0x8071F720u - 32512;
+ 
+ // OSThread / OSContext fields
+ constexpr uint32_t T_STATE = 0x2C8, T_PRIORITY = 0x2D0, T_QUEUE = 0x2DC, T_NEXT = 0x2E0, T_PREV = 0x2E4;
+-enum : uint32_t { STATE_READY = 1, STATE_RUNNING = 2, STATE_WAITING = 4, STATE_MORIBUND = 8 };
++enum : uint32_t { STATE_INACTIVE = 0, STATE_READY = 1, STATE_RUNNING = 2, STATE_WAITING = 4, STATE_MORIBUND = 8 };
+ 
+-constexpr size_t FIBER_STACK = 8u << 20;  // recompiled code nests one host frame per guest call
+ 
+ struct GuestThread {
++    bool used=false;
+     uint32_t addr = 0;
+-    void* fiber = nullptr;
++    PPCContext context_storage{};
++    PPCTrace trace_storage{};
++    HostFiber storage;
++    HostFiber* fiber = nullptr;
+     PPCContext* ctx = nullptr;
+     PPCTrace* trace = nullptr;
+     uint32_t entry = 0, exit_lr = 0;
+@@ -48,17 +57,19 @@ struct GuestThread {
+     std::vector<uint32_t> irq_frames;  // contexts of interrupts being delivered on this fiber
+ };
+ 
++std::array<GuestThread,256> g_records;
+ std::unordered_map<uint32_t, GuestThread*> g_threads;
++GuestThread* g_boot = nullptr;
+ GuestThread* g_cur = nullptr;       // whose fiber is executing right now
+ std::vector<GuestThread*> g_dead;   // exited fibers, deleted from another fiber
+ uint8_t* g_m = nullptr;
+-bool g_trace = std::getenv("MW_TRACE_SCHED") != nullptr;
++bool g_trace = native_config_get("MW_TRACE_SCHED") != nullptr;
+ 
+ GuestThread* thread_for(uint32_t addr) {
+     GuestThread*& t = g_threads[addr];
+     if (!t) {
+-        t = new GuestThread;
+-        t->addr = addr;
++        for(size_t i=1;i<g_records.size();++i)if(!g_records[i].used){t=&g_records[i];t->used=true;t->addr=addr;break;}
++        if(!t)ppc_fatal("Guest thread metadata slots exhausted");
+     }
+     return t;
+ }
+@@ -66,18 +77,21 @@ GuestThread* thread_for(uint32_t addr) {
+ void WINAPI fiber_main(void* p) {
+     GuestThread* t = static_cast<GuestThread*>(p);
+     PPCContext& c = *t->ctx;
++    try{
+     ppc_call_indirect(c, g_m, t->entry);
+     // The thread function returned: continue at its context's LR (OSExitThread), result in r3.
+     ppc_call_indirect(c, g_m, t->exit_lr);
+     ppc_fatal("guest thread 0x%08X came back from its exit function", t->addr);
++    }catch(const std::exception& error){native_host_fail(error.what());throw;}
++    catch(...){native_host_fail("Unhandled guest fiber exception");throw;}
+ }
+ 
+ // Builds the first host register state of a thread from its guest OSContext.
+ void start_fiber(GuestThread* t) {
+     uint8_t* m = g_m;
+     uint32_t ctx = t->addr;
+-    if (!t->ctx) t->ctx = new PPCContext;
+-    if (!t->trace) t->trace = new PPCTrace;
++    if (!t->ctx) t->ctx = &t->context_storage;
++    if (!t->trace) t->trace = &t->trace_storage;
+     PPCContext& c = *t->ctx;
+     std::memset(&c, 0, sizeof c);
+     std::memset(t->trace, 0, sizeof *t->trace);
+@@ -97,9 +111,10 @@ void start_fiber(GuestThread* t) {
+     t->entry = ld32(m, ctx + 0x198);
+     t->exit_lr = c.lr;
+     t->exited = false;
+-    if (t->fiber) DeleteFiber(t->fiber);
+-    t->fiber = CreateFiberEx(0, FIBER_STACK, FIBER_FLAG_FLOAT_SWITCH, fiber_main, t);
+-    if (!t->fiber) ppc_fatal("CreateFiber failed for guest thread 0x%08X", t->addr);
++    std::erase(g_dead,t); // A reused SDK address belongs to this new generation.
++    if (t->fiber) host_fiber_destroy(*t->fiber);
++    t->fiber = &t->storage;
++    if (!host_fiber_create(*t->fiber, fiber_main, t)) ppc_fatal("Fixed stack allocation failed for guest thread 0x%08X", t->addr);
+ }
+ 
+ void switch_to(GuestThread* t) {
+@@ -107,11 +122,11 @@ void switch_to(GuestThread* t) {
+     if (!t->fiber || t->exited) start_fiber(t);
+     g_cur = t;
+     g_ppc_trace = t->trace;
+-    SwitchToFiber(t->fiber);
++    host_fiber_switch(*t->fiber);
+     // Back on this fiber: whoever switched here already set g_cur / g_ppc_trace.
+     for (GuestThread* d : g_dead)
+-        if (d != g_cur && d->fiber) {
+-            DeleteFiber(d->fiber);
++        if (d != g_cur && d->exited && d->fiber) {
++            host_fiber_destroy(*d->fiber);
+             d->fiber = nullptr;
+         }
+     g_dead.clear();
+@@ -159,14 +174,23 @@ uint32_t dequeue_highest(uint8_t* m) {
+ 
+ void os_threads_init(uint8_t* m, PPCContext* main_ctx) {
+     g_m = m;
+-    // The boot thread becomes a fiber; it's bound to a guest OSThread on first use.
+-    void* fiber = ConvertThreadToFiberEx(nullptr, FIBER_FLAG_FLOAT_SWITCH);
+-    if (!fiber) ppc_fatal("ConvertThreadToFiber failed");
+-    static GuestThread boot;
+-    boot.fiber = fiber;
+-    boot.ctx = main_ctx;
+-    boot.trace = g_ppc_trace;
+-    g_cur = &boot;
++    // Boot already runs on an owned stack, including the standalone CLI.
++    HostFiber* fiber = host_fiber_current();
++    if (!fiber->allocation) ppc_fatal("Guest boot requires an owned host stack");
++    g_boot=&g_records[0];g_boot->used=true;
++    g_boot->fiber=fiber;g_boot->ctx=main_ctx;g_boot->trace=g_ppc_trace;g_cur=g_boot;
++}
++
++void os_threads_shutdown(HostFiber* retained_fiber){
++    for(auto& pair:g_threads){
++        GuestThread* t=pair.second;
++        // The boot stack belongs to the host entry wrapper, even after it returns.
++        if(t!=g_boot&&t->fiber&&t->fiber!=retained_fiber)host_fiber_destroy(*t->fiber);
++        if(t!=g_boot)*t=GuestThread{};
++    }
++    g_threads.clear();g_dead.clear();
++    if(g_boot)*g_boot=GuestThread{};
++    g_cur=nullptr;g_m=nullptr;
+ }
+ 
+ void os_irq_push(uint32_t ctx) { g_cur->irq_frames.push_back(ctx); }
+@@ -201,7 +225,9 @@ PPC_FUNC(f_80301900) {
+         st16(m, cur + T_STATE, STATE_READY);
+         enqueue_ready(m, cur);
+     }
+-    if (cur && ld16(m, cur + T_STATE) == STATE_MORIBUND && g_cur && g_cur->addr == cur) {
++    // The original SDK sets detached exits to0 and joinable exits to8.
++    // Both host stacks are terminal; a reused guest address needs a fresh fiber.
++    if (cur && (ld16(m, cur + T_STATE) == STATE_MORIBUND || ld16(m,cur+T_STATE)==STATE_INACTIVE) && g_cur && g_cur->addr == cur && !g_cur->exited) {
+         g_cur->exited = true;
+         g_dead.push_back(g_cur);
+     }
+@@ -214,6 +240,25 @@ PPC_FUNC(f_80301900) {
+         uint32_t msr = c.msr;
+         c.msr |= MSR_EE;
+         while (ld32(m, RUN_QUEUE_BITS) == 0) {
++            native_host_poll();
++            if(NATIVE_OPTION("MW_TRACE_IDLE")) {
++                static uint64_t last=0;
++                uint64_t now=ppc_timebase();
++                if(!last||now-last>=5ull*60750000) {
++                    last=now;
++                    std::fprintf(stderr,"[idle] owner=%08x msr=%08x ready=%08x disabled=%08x resched=%08x threads=%zu\n",g_cur?g_cur->addr:0,c.msr,ld32(m,RUN_QUEUE_BITS),ld32(m,RESCHEDULE_DISABLED),ld32(m,RESCHEDULE),g_threads.size());
++                    unsigned count=0;
++                    for(const auto& item:g_threads) {
++                        if(++count>32)break;
++                        const GuestThread* thread=item.second;
++                        const PPCTrace* trace=thread->trace;
++                        std::fprintf(stderr,"[idle-thread] address=%08x state=%u priority=%u queue=%08x exited=%u depth=%u tail=",thread->addr,ld16(m,thread->addr+T_STATE),ld32(m,thread->addr+T_PRIORITY),ld32(m,thread->addr+T_QUEUE),thread->exited,trace?trace->depth:0);
++                        if(trace){unsigned n=trace->depth<PPCTrace::kMax?trace->depth:PPCTrace::kMax;for(unsigned i=n>4?n-4:0;i<n;++i)std::fprintf(stderr,"%08x,",trace->stack[i]);}
++                        std::fprintf(stderr,"\n");
++                    }
++                    os_trace_hardware_state();
++                }
++            }
+             os_deliver_interrupts(c, m);
+             if (ld32(m, RUN_QUEUE_BITS) == 0) os_wait_for_event();
+         }
+@@ -252,3 +297,30 @@ PPC_FUNC(f_802FAC20) {
+     if (g_cur && ctx == g_cur->addr) return;
+     if (ctx && ctx == ld32(m, CUR_THREAD)) switch_to(thread_for(ctx));
+ }
++
++void os_threads_state(StateArchive& ar){
++    if(!g_boot)throw std::runtime_error("Snapshot boot thread absent");
++    ar.tag(0x54485244);
++    uint32_t current=ar.reading?0:uint32_t(g_cur-g_records.data());ar.pod(current);
++    if(current>=g_records.size())throw std::runtime_error("Snapshot current thread slot");
++    HostFiber* boot_fiber=g_boot->fiber;PPCContext* boot_ctx=g_boot->ctx;PPCTrace* boot_trace=g_boot->trace;
++    if(ar.reading){
++        for(size_t i=1;i<g_records.size();++i){auto& t=g_records[i];if(t.fiber)host_fiber_destroy(*t.fiber);t=GuestThread{};}
++        g_threads.clear();g_dead.clear();
++    }
++    std::vector<uint32_t> dead;
++    if(!ar.reading)for(auto* t:g_dead)dead.push_back(uint32_t(t-g_records.data()));
++    ar.vector(dead,256);
++    for(size_t i=0;i<g_records.size();++i){
++        auto& t=g_records[i];ar.pod(t.used);if(!t.used)continue;
++        if(ar.reading){t.ctx=i?&t.context_storage:boot_ctx;t.trace=i?&t.trace_storage:boot_trace;}
++        ar.pod(t.addr);ar.pod(*t.ctx);ar.pod(*t.trace);ar.pod(t.entry);ar.pod(t.exit_lr);ar.pod(t.exited);ar.vector(t.irq_frames,64);
++        bool has_stack=t.fiber!=nullptr;ar.pod(has_stack);
++        if(ar.reading)t.fiber=has_stack?(i?&t.storage:boot_fiber):nullptr;
++        if(has_stack)host_fiber_state(ar,*t.fiber);
++        if(ar.reading&&t.addr){if(g_threads.contains(t.addr))throw std::runtime_error("Duplicate snapshot thread address");g_threads[t.addr]=&t;}
++    }
++    if(ar.reading)for(uint32_t i:dead){if(i>=g_records.size()||!g_records[i].used||!g_records[i].exited)throw std::runtime_error("Invalid retired snapshot thread");g_dead.push_back(&g_records[i]);}
++    if(ar.reading){g_boot=&g_records[0];g_cur=&g_records[current];if(!g_cur->used||!g_cur->fiber)throw std::runtime_error("Snapshot thread has no stack");g_ppc_trace=g_cur->trace;}
++}
++HostFiber* os_threads_resume(){return g_cur?g_cur->fiber:nullptr;}
+diff --git a/port/tests/difftest.py b/port/tests/difftest.py
+index 5f50ded..2a3f251 100644
+--- a/port/tests/difftest.py
++++ b/port/tests/difftest.py
+@@ -175,9 +175,17 @@ def main():
+             fp.write(c["scratch"])
+     subprocess.run([str(args.exe), str(args.dol), str(cases_path), str(out_path)], check=True)
+ 
++    # Functions replaced by host code (recomp/hle.txt) intentionally differ from the
++    # original PPC body; report them separately so real recompiler failures stand out.
++    replaced = set()
++    for line in (ROOT / "port/recomp/hle.txt").read_text(encoding="utf-8").splitlines():
++        word = line.split("#", 1)[0].split()
++        if word:
++            replaced.add(int(word[0], 16))
+     raw = out_path.read_bytes()
+     rec = struct.Struct("<32IIIIII")
+     fails = 0
++    replaced_cases = replaced_diffs = 0
+     for i, (c, e) in enumerate(zip(cases, expected)):
+         v = rec.unpack_from(raw, i * rec.size)
+         got = dict(regs=list(v[:32]), cr=v[32], ca=v[33], scratch=v[34], stack=v[35], data=v[36])
+@@ -185,6 +193,10 @@ def main():
+         # one-instruction addic test). Carry still gets tested wherever adde/addze/subfe
+         # consume it, since their results land in GPRs.
+         bad = [k for k in ("regs", "cr", "scratch", "stack", "data") if got[k] != e[k]]
++        if c["func"] in replaced:
++            replaced_cases += 1
++            replaced_diffs += bool(bad)
++            continue
+         if bad:
+             fails += 1
+             if fails <= 20:
+@@ -193,7 +205,9 @@ def main():
+                     detail = " ".join(f"r{r}:{e['regs'][r]:08X}/{got['regs'][r]:08X}"
+                                       for r in range(32) if e["regs"][r] != got["regs"][r])
+                 print(f"FAIL {c['func']:#010x} {','.join(bad)} {detail}")
+-    print(f"{len(cases) - fails}/{len(cases)} cases match")
++    checked = len(cases) - replaced_cases
++    print(f"{checked - fails}/{checked} cases match"
++          f" ({replaced_cases} cases of hle.txt-replaced functions reported separately, {replaced_diffs} differ by design)")
+     sys.exit(1 if fails else 0)
+ 
+ 
