@@ -181,9 +181,3 @@ cargo build --locked -p mw-game --features native-runtime --bin madworld-native
 
 Run only one Bevy instance at a time. Many `MW_*` environment variables expose inspection and test paths;
 they are documented in [docs/WORKLOG.md](docs/WORKLOG.md).
-
-## Legal
-
-This is a private preservation and research project. MadWorld is © SEGA / PlatinumGames. No game binaries,
-original audio or disc images are included. Some model and texture work built on the original assets is (colour,
-Mathilda, civilians), which is why the repository stays private. You need your own legally obtained copy.
