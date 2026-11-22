@@ -111,7 +111,17 @@ node explorer/review_export.mjs D:/Games/gamesfordecomp/exports/madworld <stem>
 - **Lit looks (F3)**: `python -I tools/stage_sign_lights.py`.
 - **Vampire zako**: already in the repo (see 3c).
 
-### 3c. Already in the repo: Kreely and the vampire zako
+### 3c. Already in the repo: colour, Mathilda, civilians, Kreely, vampire zako
+
+These steps from 3a/3b can be skipped because their outputs are committed:
+- **Colour:** `bake_native_color.py`, `stage_character_color.py`, `stage_arena_color.py`, `stage_object_color.py`,
+  `stage_boss_skin.py`. Every `*-color.glb` and colour texture under `assets/native/` and the pack in `native-host-data/color-pack/`
+  are committed. The superseded `color-pack-legacy` is not.
+- **Mathilda:** `stage_actor.py em0610 mathilda --bank em0615`, her camera clips and the ev50/ev51 `em0610` models.
+- **Town civilians:** `tools/town/stage_civilians.py` and `stage_civ_motion.py` (`assets/native/civ/`) and the ev84 crowd models.
+  The walk grid (`assets/native/world/town-nav.json`, from `tools/town/stage_nav.py`) is committed too.
+
+Their non-colour partners (for example `rinrin-source.glb` and the motion files) still come from staging.
 
 **The vampire zako** (Elise's brood, the owner's own models) are committed and need no staging:
 - `assets/characters/vampzako/source/`: the three original meshes (`vampirezakoN/vampirezakoN.fbx` and `.fbm` textures)

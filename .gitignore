@@ -11,7 +11,7 @@ __pycache__/
 cache/
 evidence/
 native-core-user/
-native-host-data/
+native-host-data/*
 tools/upstream-native-core/
 tools/gecko-reference/
 tools/ghidra-projects/
@@ -46,7 +46,8 @@ assets/*
 assets/characters/*
 !assets/characters/kreely/
 !assets/native/
-assets/native/*
+assets/native/**
+!assets/native/**/
 !assets/native/kreely-*
 !assets/native/audio/
 assets/native/audio/*
@@ -64,3 +65,14 @@ assets/characters/kreely/*.err
 !assets/characters/vampzako/
 !assets/characters/vampzako/**
 !assets/native/vampzako*
+!assets/native/audio/kreely/**
+# the colour look (added art): every *color* asset and the recomp colour pack
+!assets/native/**/*color*
+!native-host-data/color-pack/
+native-host-data/color-pack/**/*.log
+# Mathilda (the added boss variant) and the town civilians
+!assets/native/mathilda-*
+!assets/native/civ/**
+!assets/native/events/*/em0610*
+!assets/native/events/ev84/em09?5*
+!assets/native/world/town-nav.json

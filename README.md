@@ -4,11 +4,17 @@ A native PC reconstruction of **MadWorld** (Wii, disc RZZE8P rev 0), written in 
 It replaces the emulated Wii hardware with SDK-level high-level emulation (HLE) and reimplements game logic in Rust.
 It started from the RinRin boss fight and grew into a multi-stage game with optional VR.
 
-> **No original game data is in this repository.** Everything under `assets/native/`, `extracted/`, `staged/` and the
-> research dumps comes from your own disc through the staging tools in `tools/`. The only committed assets are the
-> owner's own: **Kreese Kreely** (`assets/characters/kreely`, `assets/native/kreely-*`, `assets/native/audio/kreely`),
-> **the three vampire zako** (`assets/characters/vampzako`, `assets/native/vampzako*`) and the port's actor
-> definitions (`assets/defs`).
+> **Committed assets.** Most game data is still left out: you stage it from your own disc with the tools in `tools/`.
+> The committed assets are:
+> - the owner's own characters: **Kreese Kreely** (`assets/characters/kreely`, `assets/native/kreely-*`,
+>   `assets/native/audio/kreely`) and **the three vampire zako** (`assets/characters/vampzako`, `assets/native/vampzako*`)
+> - the port's actor definitions (`assets/defs`)
+> - **the colour look**: every `*color*` asset under `assets/native/` (characters, rooms, events, objects, UI) and the
+>   colour texture pack `native-host-data/color-pack/`
+> - **Mathilda** (`assets/native/mathilda-*`, her ev50/ev51 models) and **the town civilians** (`assets/native/civ/`,
+>   the ev84 crowd models)
+>
+> The colour, Mathilda and civilian files are built on the original models and textures, so **keep this repository private.**
 
 **Start here:**
 - **[SETUP.md](SETUP.md)**: from your disc to a playable `mw-play`. Covers disc extraction, the explorer export, every staging step, then build and run.
@@ -178,5 +184,6 @@ they are documented in [docs/WORKLOG.md](docs/WORKLOG.md).
 
 ## Legal
 
-This is a private preservation and research project. MadWorld is © SEGA / PlatinumGames. No original game code
-binaries, assets, audio or disc images are included. You need your own legally obtained copy.
+This is a private preservation and research project. MadWorld is © SEGA / PlatinumGames. No game binaries,
+original audio or disc images are included. Some model and texture work built on the original assets is (colour,
+Mathilda, civilians), which is why the repository stays private. You need your own legally obtained copy.

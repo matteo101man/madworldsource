@@ -1,0 +1,15 @@
+{
+  "path": "D:\\Games\\gamesfordecomp\\exports\\madworld\\exports\\0d5aedf597dbf1baac8a.glb",
+  "url": "exports/0d5aedf597dbf1baac8a.glb",
+  "sha256": "0d5aedf597dbf1baac8addf8102c16ea584d5aa94d88532dd232249e57ba62f4",
+  "validation": {
+    "checkedFrames": 4,
+    "checkedBones": 40,
+    "checkedWeights": 3304,
+    "checkedAttributes": 3997,
+    "matrixError": 1.0521873372582036e-7,
+    "weightError": 0,
+    "attributeError": 0,
+    "authority": "actual GLTFLoader reimport; integer-frame native pose, positions/UVs/active vertex colors/indices and every influence; lighting and visual fidelity separate"
+  }
+}
